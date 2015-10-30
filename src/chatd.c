@@ -95,7 +95,7 @@ int main(int argc, char **argv)
                         int connfd;
                         connfd = accept(sockfd, (struct sockaddr *) &client,
                                         &len);
-                        
+
                         /* Receive one byte less than declared,
                            because it will be zero-termianted
                            below. */
