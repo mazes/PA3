@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <signal.h>
+#include <errno.h>
 
 /* Secure socket layer headers */
 #include <openssl/ssl.h>
@@ -53,7 +54,7 @@ void getpasswd(const char *prompt, char *passwd, size_t size)
 
         /* Clear out the buffer content. */
         memset(passwd, 0, size);
-        
+
         /* Disable echo. */
 	tcgetattr(fileno(stdin), &old_flags);
 	memcpy(&new_flags, &old_flags, sizeof(old_flags));
@@ -93,7 +94,7 @@ void
 sigint_handler(int signum)
 {
         active = 0;
-        
+
         /* We should not use printf inside of signal handlers, this is not
          * considered safe. We may, however, use write() and fsync(). */
         write(STDOUT_FILENO, "Terminated.\n", 12);
@@ -255,7 +256,7 @@ int main(int argc, char **argv)
 	SSL_library_init();
 	SSL_load_error_strings();
 	SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_client_method());
-        
+
 	/* TODO:
 	 * We may want to use a certificate file if we self sign the
 	 * certificates using SSL_use_certificate_file(). If available,
@@ -264,6 +265,14 @@ int main(int argc, char **argv)
 	 * a server side key data base can be used to authenticate the
 	 * client.
 	 */
+	 if(!SSL_use_certificate_file(ssl_ctx,"../data/fd.crt")){
+		 perror("SSL_CTX_use_certificate_file");
+		 exit(-1);
+	 }
+	 if(!SSL_CTX_use_PrivateKey_file(ssl_ctx,"..data/fd.key")){
+		 perror("SSL_CTX_use_certificate_file");
+		 exit(-1);
+	 }
 
 	server_ssl = SSL_new(ssl_ctx);
 
@@ -296,7 +305,7 @@ int main(int argc, char **argv)
                 FD_SET(STDIN_FILENO, &rfds);
 		timeout.tv_sec = 5;
 		timeout.tv_usec = 0;
-		
+
                 int r = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &timeout);
                 if (r < 0) {
                         if (errno == EINTR) {
