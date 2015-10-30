@@ -60,7 +60,7 @@ int main(int argc, char **argv)
         /* Network functions need arguments in network byte order instead of
            host byte order. The macros htonl, htons convert the values, */
         server.sin_addr.s_addr = htonl(INADDR_ANY);
-        server.sin_port = htons(32000);
+        server.sin_port = htons(atoi(argv[1]));
         bind(sockfd, (struct sockaddr *) &server, (socklen_t) sizeof(server));
 
 	/* Before we can accept messages, we have to listen to the port. We allow one
