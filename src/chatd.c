@@ -17,7 +17,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <glib.h>
-
+/* Secure socket layer headers */
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 
 /* This can be used to build instances of GTree that index on
@@ -49,8 +51,37 @@ int sockaddr_in_cmp(const void *addr1, const void *addr2)
 int main(int argc, char **argv)
 {
         int sockfd;
+        int accSocket;
         struct sockaddr_in server, client;
         char message[512];
+
+        /* Initialize OpenSSL */
+        SSL_library_init();
+        SSL_load_error_strings();
+        SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_client_method());
+
+        if(SSL_CTX_use_certificate_file(ssl_ctx,"../data/fd.crt", SSL_FILETYPE_PEM) <= 0){
+           perror("SSL_CTX_use_certificate_file()");
+           exit(-1);
+        }
+        if(SSL_CTX_use_PrivateKey_file(ssl_ctx,"../data/fd.key", SSL_FILETYPE_PEM) <= 0){
+           perror("SSL_CTX_use_PrivateKey_file()");
+           exit(-1);
+        }
+        if(!SSL_CTX_check_private_key(ssl_ctx)){
+          perror("private key no match");
+          exit(-1);
+        }
+        if (SSL_CTX_load_verify_locations(ctx, NULL, "../data/fd.crt") <= 0){
+          perror("SSL_CTX_load_verify_locations()");
+          exit(-1);
+        }
+        else{
+          SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
+          SSL_CTX_set_verify_depth(ssl_ctx, 1);
+        }
+
+        	server_ssl = SSL_new(ssl_ctx);
 
         /* Create and bind a TCP socket */
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -66,7 +97,16 @@ int main(int argc, char **argv)
 	 * 1 connection to queue for simplicity.
 	 */
 	listen(sockfd, 1);
+  if(accSocket = accept(sockfd, (struct sockaddr*)&client, sizeof(client)) <= 0){
+    perror("accept()");
+    exit(-1);
+  }
+  else{
+    printf ("Connection from %lx, port %x\n", client.sin_addr.s_addr, client.sin_port);
+  }
 
+  SSL_set_fd(ssl_ctx, accSocket);
+  SSL_accept(ssl_ctx);
         for (;;) {
                 fd_set rfds;
                 struct timeval tv;

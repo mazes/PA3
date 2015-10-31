@@ -265,11 +265,11 @@ int main(int argc, char **argv)
 	 * a server side key data base can be used to authenticate the
 	 * client.
 	 */
-	if(SSL_CTX_use_certificate_file(ssl_ctx,"../data/fd.crt", SSL_FILETYPE_PEM) <= 0){
+	if(SSL_CTX_use_certificate_file(ssl_ctx,"../data/client.crt", SSL_FILETYPE_PEM) <= 0){
 		 perror("SSL_CTX_use_certificate_file()");
 		 exit(-1);
 	}
-	if(SSL_CTX_use_PrivateKey_file(ssl_ctx,"../data/fd.key", SSL_FILETYPE_PEM) <= 0){
+	if(SSL_CTX_use_PrivateKey_file(ssl_ctx,"../data/client.key", SSL_FILETYPE_PEM) <= 0){
 		 perror("SSL_CTX_use_PrivateKey_file()");
  		 exit(-1);
 	}
@@ -277,13 +277,9 @@ int main(int argc, char **argv)
 		perror("private key no match");
 		exit(-1);
 	}
-	if (SSL_CTX_load_verify_locations(ctx, NULL, "../data/fd.crt") <= 0){
+	if (SSL_CTX_load_verify_locations(ctx, NULL, "../data/client.crt") <= 0){
 		perror("SSL_CTX_load_verify_locations()");
 		exit(-1);
-	}
-	else{
-		SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
-		SSL_CTX_set_verify_depth(ssl_ctx, 1);
 	}
 	/*
 	*load client certificates?  if so, load with the same certificates? \wondering
@@ -296,6 +292,7 @@ int main(int argc, char **argv)
 	 * them.
 	 */
 	 struct sockaddr_in server;
+
 	 if(server_fd = socket(AF_INET, SOCK_STREAM, 0) <= 0){
 		 perror("socket()");
 		 exit(-1);
@@ -322,7 +319,7 @@ int main(int argc, char **argv)
 				if(SSL_connect(ssl_ctx) != 1){
 					perror("SSL_connect()");
 					exit(-1);
-				} 
+				}
 
         /* Read characters from the keyboard while waiting for input.
          */
