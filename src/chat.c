@@ -268,11 +268,11 @@ int main(int argc, char **argv)
 	 * a server side key data base can be used to authenticate the
 	 * client.
 	 */
-	if(SSL_CTX_use_certificate_file(ssl_ctx,"../data/client.crt", SSL_FILETYPE_PEM) <= 0){
+	if(!SSL_CTX_use_certificate_file(ssl_ctx,"../data/client.crt", SSL_FILETYPE_PEM)){
 		 perror("SSL_CTX_use_certificate_file()");
 		 exit(-1);
 	}
-	if(SSL_CTX_use_PrivateKey_file(ssl_ctx,"../data/client.key", SSL_FILETYPE_PEM) <= 0){
+	if(!SSL_CTX_use_PrivateKey_file(ssl_ctx,"../data/client.key", SSL_FILETYPE_PEM)){
 		 perror("SSL_CTX_use_PrivateKey_file()");
  		 exit(-1);
 	}
@@ -281,11 +281,13 @@ int main(int argc, char **argv)
 		exit(-1);
 	}
 
-	if (SSL_CTX_load_verify_locations(ssl_ctx, NULL, "../data/client.crt") <= 0){
+	if (!SSL_CTX_load_verify_locations(ssl_ctx, NULL, "../data/client.crt")){
 
 		perror("SSL_CTX_load_verify_locations()");
 		exit(-1);
 	}
+	SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
+	SSL_CTX_set_verify_depth(ssl_ctx, 1);
 	/*
 	*load client certificates?  if so, load with the same certificates? \wondering
 	*/
@@ -298,7 +300,7 @@ int main(int argc, char **argv)
 	 */
 	 struct sockaddr_in server;
 
-		server_fd = socket(AF_INET, SOCK_STREAM, 0);
+		server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if(server_fd <= 0){
 		 perror("socket()");
 		 exit(-1);
@@ -308,11 +310,9 @@ int main(int argc, char **argv)
 	 server.sin_addr.s_addr = INADDR_ANY;
 	 server.sin_port = htons(atoi(argv[1]));
 
-	/* if(connect(server_fd, (struct sockaddr*)&server, sizeof(server)) < 0){
-	  perror("connect()");
-	}*/
 	int err = connect(server_fd, (struct sockaddr*)&server, sizeof(server));
 	CHK_ERR(err, "connect");
+
 	/* Use the socket for the SSL connection. */
 	SSL_set_fd(server_ssl, server_fd);
 
