@@ -21,9 +21,10 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-
-/* This can be used to build instances of GTree that index on
-   the address of a connection. */
+#define CHK_NULL(x) if ((x)==NULL) exit (1)
+#define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
+#define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
+  /* the address of a connection. */
 int sockaddr_in_cmp(const void *addr1, const void *addr2)
 {
         const struct sockaddr_in *_addr1 = addr1;
@@ -50,8 +51,7 @@ static SSL *server_ssl;
 
 int main(int argc, char **argv)
 {
-        int sockfd;
-        int accSocket;
+        int sockfd, accSocket, err;
         struct sockaddr_in server, client;
         char message[512];
 
@@ -81,32 +81,37 @@ int main(int argc, char **argv)
           SSL_CTX_set_verify_depth(ssl_ctx, 1);
         }
 
-        	server_ssl = SSL_new(ssl_ctx);
-
         /* Create and bind a TCP socket */
-        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		CHK_ERR(sockfd, "socket");
         memset(&server, 0, sizeof(server));
         server.sin_family = AF_INET;
         /* Network functions need arguments in network byte order instead of
            host byte order. The macros htonl, htons convert the values, */
         server.sin_addr.s_addr = htonl(INADDR_ANY);
         server.sin_port = htons(atoi(argv[1]));
-        bind(sockfd, (struct sockaddr *) &server, (socklen_t) sizeof(server));
-
+        err = bind(sockfd, (struct sockaddr *) &server, (socklen_t) sizeof(server));
+		CHK_ERR(err, "bind");
 	/* Before we can accept messages, we have to listen to the port. We allow one
 	 * 1 connection to queue for simplicity.
 	 */
-	listen(sockfd, 1);
-  if(accSocket = accept(sockfd, (struct sockaddr*)&client, sizeof(client)) < 0){
-    perror("accept()");
-    exit(-1);
-  }
-  else{
-    printf ("Connection from %lx, port %x\n", client.sin_addr.s_addr, client.sin_port);
-  }
+	err = listen(sockfd, 1);
+	CHK_ERR(err, "listen");
 
+	socklen_t clientLength = (socklen_t) sizeof(client);
+	//int clientLength = sizeof(client);
+  	accSocket = accept(sockfd, (struct sockaddr*)&client, &clientLength);
+	CHK_ERR(accSocket, "accept");
+  
+    printf ("Connection from %lx, port %x\n", client.sin_addr.s_addr, client.sin_port);
+  
+	printf("after accept():\n");
+
+  server_ssl = SSL_new(ssl_ctx);
   SSL_set_fd(server_ssl, accSocket);
   SSL_accept(server_ssl);
+      /* Informational output (optional) */
+       printf("SSL connection using %s\n", SSL_get_cipher (server_ssl));
         for (;;) {
                 fd_set rfds;
                 struct timeval tv;
