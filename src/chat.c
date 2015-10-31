@@ -277,6 +277,17 @@ int main(int argc, char **argv)
 		perror("private key no match");
 		exit(-1);
 	}
+	if (SSL_CTX_load_verify_locations(ctx, NULL, "../data/fd.crt") <= 0){
+		perror("SSL_CTX_load_verify_locations()");
+		exit(-1);
+	}
+	else{
+		SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, verify_callback);
+		SSL_CTX_set_verify_depth(ctx, 1);
+	}
+	/*
+	*load client certificates?  if so, load with the same certificates? \wondering
+	*/
 
 	server_ssl = SSL_new(ssl_ctx);
 
@@ -284,7 +295,19 @@ int main(int argc, char **argv)
 	 * create here can be used in select calls, so do not forget
 	 * them.
 	 */
+	 struct sockaddr_in server;
+	 if(server_fd = socket(AF_INET, SOCK_STREAM, 0) <= 0){
+		 perror("socket()");
+		 exit(-1);
+	 }
+	 memset(&server, 0, sizeof(server));
+	 server.sin_family = AF_INET;
+	 server.sin_addr.s_addr = INADDR_ANY;
+	 server.sin_port = htons(atoi(argv[1]));
 
+	 if(connect(server_fd, (struct sockaddr*)&server, sizeof(server)) <= 0)
+	  perror("connect()");
+	}
 	/* Use the socket for the SSL connection. */
 	SSL_set_fd(server_ssl, server_fd);
 
@@ -296,6 +319,10 @@ int main(int argc, char **argv)
 	 */
 
         /* Set up secure connection to the chatd server. */
+				if(SSL_connect(ctx) != 1){
+					perror("SSL_connect()");
+					exit(-1);
+				} 
 
         /* Read characters from the keyboard while waiting for input.
          */
