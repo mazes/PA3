@@ -265,14 +265,18 @@ int main(int argc, char **argv)
 	 * a server side key data base can be used to authenticate the
 	 * client.
 	 */
-	 if(!SSL_use_certificate_file(ssl_ctx,"../data/fd.crt")){
-		 perror("SSL_CTX_use_certificate_file");
+	if(SSL_CTX_use_certificate_file(ssl_ctx,"../data/fd.crt", SSL_FILETYPE_PEM) <= 0){
+		 perror("SSL_CTX_use_certificate_file()");
 		 exit(-1);
-	 }
-	 if(!SSL_CTX_use_PrivateKey_file(ssl_ctx,"..data/fd.key")){
-		 perror("SSL_CTX_use_certificate_file");
-		 exit(-1);
-	 }
+	}
+	if(SSL_CTX_use_PrivateKey_file(ssl_ctx,"../data/fd.key", SSL_FILETYPE_PEM) <= 0){
+		 perror("SSL_CTX_use_PrivateKey_file()");
+ 		 exit(-1);
+	}
+	if(!SSL_CTX_check_private_key(ssl_ctx)){
+		perror("private key no match");
+		exit(-1);
+	}
 
 	server_ssl = SSL_new(ssl_ctx);
 
