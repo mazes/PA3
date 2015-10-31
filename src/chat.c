@@ -282,8 +282,8 @@ int main(int argc, char **argv)
 		exit(-1);
 	}
 	else{
-		SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, verify_callback);
-		SSL_CTX_set_verify_depth(ctx, 1);
+		SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
+		SSL_CTX_set_verify_depth(ssl_ctx, 1);
 	}
 	/*
 	*load client certificates?  if so, load with the same certificates? \wondering
@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 	 server.sin_addr.s_addr = INADDR_ANY;
 	 server.sin_port = htons(atoi(argv[1]));
 
-	 if(connect(server_fd, (struct sockaddr*)&server, sizeof(server)) <= 0)
+	 if(connect(server_fd, (struct sockaddr*)&server, sizeof(server)) <= 0){
 	  perror("connect()");
 	}
 	/* Use the socket for the SSL connection. */
@@ -319,7 +319,7 @@ int main(int argc, char **argv)
 	 */
 
         /* Set up secure connection to the chatd server. */
-				if(SSL_connect(ctx) != 1){
+				if(SSL_connect(ssl_ctx) != 1){
 					perror("SSL_connect()");
 					exit(-1);
 				} 
