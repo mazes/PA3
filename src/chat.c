@@ -29,6 +29,9 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#define CHK_NULL(x) if ((x)==NULL) exit (1)
+#define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
+#define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); } 
 
 /* This variable is 1 while the client is active and becomes 0 after
    a quit command to terminate the client and to clean up the
@@ -278,7 +281,7 @@ int main(int argc, char **argv)
 		exit(-1);
 	}
 
-	if (SSL_CTX_load_verify_locations(ctx, NULL, "../data/client.crt") <= 0){
+	if (SSL_CTX_load_verify_locations(ssl_ctx, NULL, "../data/client.crt") <= 0){
 
 		perror("SSL_CTX_load_verify_locations()");
 		exit(-1);
@@ -295,7 +298,8 @@ int main(int argc, char **argv)
 	 */
 	 struct sockaddr_in server;
 
-	 if(server_fd = socket(AF_INET, SOCK_STREAM, 0) <= 0){
+		server_fd = socket(AF_INET, SOCK_STREAM, 0);
+		if(server_fd <= 0){
 		 perror("socket()");
 		 exit(-1);
 	 }
@@ -304,9 +308,11 @@ int main(int argc, char **argv)
 	 server.sin_addr.s_addr = INADDR_ANY;
 	 server.sin_port = htons(atoi(argv[1]));
 
-	 if(connect(server_fd, (struct sockaddr*)&server, sizeof(server)) <= 0){
+	/* if(connect(server_fd, (struct sockaddr*)&server, sizeof(server)) < 0){
 	  perror("connect()");
-	}
+	}*/
+	int err = connect(server_fd, (struct sockaddr*)&server, sizeof(server));
+	CHK_ERR(err, "connect");
 	/* Use the socket for the SSL connection. */
 	SSL_set_fd(server_ssl, server_fd);
 
@@ -318,7 +324,7 @@ int main(int argc, char **argv)
 	 */
 
         /* Set up secure connection to the chatd server. */
-				if(SSL_connect(ssl_ctx) != 1){
+				if(SSL_connect(server_ssl) != 1){
 					perror("SSL_connect()");
 					exit(-1);
 				}

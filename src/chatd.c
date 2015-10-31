@@ -46,7 +46,7 @@ int sockaddr_in_cmp(const void *addr1, const void *addr2)
         return 0;
 }
 
-
+static SSL *server_ssl;
 
 int main(int argc, char **argv)
 {
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
           perror("private key no match");
           exit(-1);
         }
-        if (SSL_CTX_load_verify_locations(ctx, NULL, "../data/fd.crt") <= 0){
+        if (SSL_CTX_load_verify_locations(ssl_ctx, NULL, "../data/fd.crt") <= 0){
           perror("SSL_CTX_load_verify_locations()");
           exit(-1);
         }
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 	 * 1 connection to queue for simplicity.
 	 */
 	listen(sockfd, 1);
-  if(accSocket = accept(sockfd, (struct sockaddr*)&client, sizeof(client)) <= 0){
+  if(accSocket = accept(sockfd, (struct sockaddr*)&client, sizeof(client)) < 0){
     perror("accept()");
     exit(-1);
   }
@@ -105,8 +105,8 @@ int main(int argc, char **argv)
     printf ("Connection from %lx, port %x\n", client.sin_addr.s_addr, client.sin_port);
   }
 
-  SSL_set_fd(ssl_ctx, accSocket);
-  SSL_accept(ssl_ctx);
+  SSL_set_fd(server_ssl, accSocket);
+  SSL_accept(server_ssl);
         for (;;) {
                 fd_set rfds;
                 struct timeval tv;
