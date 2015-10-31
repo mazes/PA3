@@ -277,13 +277,9 @@ int main(int argc, char **argv)
 		perror("private key no match");
 		exit(-1);
 	}
-	if (SSL_CTX_load_verify_locations(ctx, NULL, "../data/fd.crt") <= 0){
+	if (SSL_CTX_load_verify_locations(ssl_ctx, NULL, "../data/fd.crt") <= 0){
 		perror("SSL_CTX_load_verify_locations()");
 		exit(-1);
-	}
-	else{
-		SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
-		SSL_CTX_set_verify_depth(ssl_ctx, 1);
 	}
 	/*
 	*load client certificates?  if so, load with the same certificates? \wondering
