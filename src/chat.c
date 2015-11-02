@@ -314,8 +314,6 @@ int main(int argc, char **argv)
 	*load client certificates?  if so, load with the same certificates? \wondering
 	*/
 
-
-
 	/* Create and set up a listening socket. The sockets you
 	 * create here can be used in select calls, so do not forget
 	 * them.
@@ -330,7 +328,7 @@ int main(int argc, char **argv)
 	 memset(&server, 0, sizeof(server));
 	 server.sin_family = AF_INET;
 	 server.sin_addr.s_addr = INADDR_ANY;
-	 server.sin_port = htons(atoi(argv[1]));
+	 server.sin_port = htons(atoi(argv[2]));
 
 	int err = connect(server_fd, (struct sockaddr*)&server, sizeof(server));
 	CHK_ERR(err, "connect");
