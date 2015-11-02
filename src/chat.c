@@ -291,7 +291,7 @@ int main(int argc, char **argv)
 	 * a server side key data base can be used to authenticate the
 	 * client.
 	 */
-	/*if(!SSL_CTX_use_certificate_file(ssl_ctx,"../data/client.crt", SSL_FILETYPE_PEM)){
+	if(!SSL_CTX_use_certificate_file(ssl_ctx,"../data/client.crt", SSL_FILETYPE_PEM)){
 		 perror("SSL_CTX_use_certificate_file()");
 		 exit(-1);
 	}
@@ -312,7 +312,7 @@ int main(int argc, char **argv)
 	SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
 	SSL_CTX_set_verify_depth(ssl_ctx, 1);
 	*load client certificates?  if so, load with the same certificates? \wondering
-	*/
+
 
 	/* Create and set up a listening socket. The sockets you
 	 * create here can be used in select calls, so do not forget
@@ -330,6 +330,7 @@ int main(int argc, char **argv)
 	 server.sin_addr.s_addr = INADDR_ANY;
 	 server.sin_port = htons(atoi(argv[2]));
 
+	 printf("Before connect()\n");
 	int err = connect(server_fd, (struct sockaddr*)&server, sizeof(server));
 	CHK_ERR(err, "connect");
 
@@ -343,7 +344,7 @@ int main(int argc, char **argv)
 	 * writes to sock_fd will insert unencrypted data into the
 	 * stream, which even may crash the server.
 	 */
-
+	 			printf("Before SSL_connect()\n");
         /* Set up secure connection to the chatd server. */
 				if(SSL_connect(server_ssl) != 1){
 					perror("SSL_connect()");
@@ -351,6 +352,7 @@ int main(int argc, char **argv)
 				}
         /* Read characters from the keyboard while waiting for input.
          */
+				 printf("Before prompt\n");
         prompt = strdup("> ");
         rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
         while (active) {

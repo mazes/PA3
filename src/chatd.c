@@ -103,7 +103,7 @@ int main(int argc, char **argv)
         SSL_library_init();
         SSL_load_error_strings();
         OpenSSL_add_all_algorithms();
-        SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_method());
+        SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_server_method());
 
         if(!SSL_CTX_use_certificate_file(ssl_ctx,"../data/server.crt", SSL_FILETYPE_PEM)){
            perror("SSL_CTX_use_certificate_file()");
@@ -117,14 +117,12 @@ int main(int argc, char **argv)
           perror("private key no match");
           exit(-1);
         }
-      /*  if (!SSL_CTX_load_verify_locations(ssl_ctx, NULL, "../data/fd.crt")){
+        if (!SSL_CTX_load_verify_locations(ssl_ctx, NULL, "../data/fd.crt")){
           perror("SSL_CTX_load_verify_locations()");
           exit(-1);
         }
-        else{
           SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
           SSL_CTX_set_verify_depth(ssl_ctx, 1);
-        } */
 
         /* Create and bind a TCP socket */
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -139,6 +137,7 @@ int main(int argc, char **argv)
 	/* Before we can accept messages, we have to listen to the port. We allow one
 	 * 1 connection to queue for simplicity.
 	 */
+   printf("listening... ");
 	if(listen(sockfd, 5) != 0){
     perror("listen()");
   }
@@ -155,10 +154,11 @@ int main(int argc, char **argv)
           /* Wait for five seconds. */
           tv.tv_sec = 5;
           tv.tv_usec = 0;
+          printf("Before select()\n");
           retval = select(sockfd + 1, &rfds, NULL, NULL, &tv);
 
           if (retval == -1) {
-                  perror("select()");
+                  perror("select()\n");
           } else if (retval > 0) {
                   /* Data is available, receive it. */
                   assert(FD_ISSET(sockfd, &rfds));
@@ -174,6 +174,7 @@ int main(int argc, char **argv)
                   }
                   server_ssl = SSL_new(ssl_ctx);
                   SSL_set_fd(server_ssl, accSocket);
+                  printf("Before Servlet");
                   Servlet(server_ssl);
 
           } else {
@@ -181,6 +182,7 @@ int main(int argc, char **argv)
                   fflush(stdout);
           }
         }
+        printf("Before close()\n");
         close(sockfd);
         SSL_CTX_free(ssl_ctx);
 }
