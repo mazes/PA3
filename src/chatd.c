@@ -105,11 +105,11 @@ int main(int argc, char **argv)
         OpenSSL_add_all_algorithms();
         SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_client_method());
 
-        if(!SSL_CTX_use_certificate_file(ssl_ctx,"../data/fd.crt", SSL_FILETYPE_PEM)){
+        if(!SSL_CTX_use_certificate_file(ssl_ctx,"../data/server.crt", SSL_FILETYPE_PEM)){
            perror("SSL_CTX_use_certificate_file()");
            exit(-1);
         }
-        if(!SSL_CTX_use_PrivateKey_file(ssl_ctx,"../data/fd.key", SSL_FILETYPE_PEM)){
+        if(!SSL_CTX_use_PrivateKey_file(ssl_ctx,"../data/server.key", SSL_FILETYPE_PEM)){
            perror("SSL_CTX_use_PrivateKey_file()");
            exit(-1);
         }
