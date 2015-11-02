@@ -69,19 +69,19 @@ void ShowCerts(SSL* ssl)
 void Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {   char message[512];
     char reply[512];
-    int sd, bytes;
+    int sd,readBytes;
     const char* Welc="Welcome!";
 
-    if ( SSL_accept(ssl) == FAIL ){     /* do SSL-protocol accept */
+    if ( SSL_accept(ssl) == -1 ){     /* do SSL-protocol accept */
         perror("SSL_accept()");
     }
     else{
         ShowCerts(ssl);        /* get any certificates */
-        message = SSL_read(ssl, message, sizeof(message)); /* get request */
-        if ( message > 0 ){
-            buf[message] = 0;
+        readBytes = SSL_read(ssl, message, sizeof(message)); /* get request */
+        if ( readBytes > 0 ){
+            message[readBytes] = 0;
             printf("Client msg: \"%s\"\n", message);
-            sprintf(reply, Welc, buf);   /* construct reply */
+            sprintf(reply, Welc, message);   /* construct reply */
             SSL_write(ssl, reply, strlen(reply)); /* send reply */
         }
         else

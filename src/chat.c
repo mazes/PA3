@@ -311,7 +311,6 @@ int main(int argc, char **argv)
 	}
 	SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
 	SSL_CTX_set_verify_depth(ssl_ctx, 1);
-	/*
 	*load client certificates?  if so, load with the same certificates? \wondering
 	*/
 
@@ -388,12 +387,12 @@ int main(int argc, char **argv)
                 if (FD_ISSET(STDIN_FILENO, &rfds)) {
                         rl_callback_read_char();
                 }
+								/* Handle messages from the server here! */
 								int readBytes;
-								char *customMessage;
-                /* Handle messages from the server here! */
+								char *customMessage = "Hello";
 								printf("Connected with %s encryption\n", SSL_get_cipher(server_ssl));
-								ShowCerts(ssl);
-								SSL_Write(server_ssl, customMessage, strlen(customMessage));
+								ShowCerts(server_ssl);
+								SSL_write(server_ssl, customMessage, strlen(customMessage));
 								readBytes = SSL_read(server_ssl, message, sizeof(message));
 								message[readBytes] = '\0';
 								printf("received: %s\n", message);
