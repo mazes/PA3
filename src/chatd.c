@@ -49,7 +49,7 @@ int sockaddr_in_cmp(const void *addr1, const void *addr2)
 void ShowCerts(SSL* ssl)
 {   X509 *cert;
     char *line;
-
+	printf("show certificates()\n");
     cert = SSL_get_peer_certificate(ssl); /* Get certificates (if available) */
     if ( cert != NULL )
     {
@@ -71,9 +71,9 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
     char reply[512];
     int sd,readBytes;
     const char* Welc="Welcome!";
-
+	printf("inside Servlet()\n");
     if ( SSL_accept(ssl) == -1 ){     /* do SSL-protocol accept */
-        perror("SSL_accept()");
+        ERR_print_errors_fp(stderr);
     }
     else{
         ShowCerts(ssl);        /* get any certificates */
