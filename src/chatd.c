@@ -103,7 +103,7 @@ int main(int argc, char **argv)
         SSL_library_init();
         SSL_load_error_strings();
         OpenSSL_add_all_algorithms();
-        SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_client_method());
+        SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_method());
 
         if(!SSL_CTX_use_certificate_file(ssl_ctx,"../data/server.crt", SSL_FILETYPE_PEM)){
            perror("SSL_CTX_use_certificate_file()");
