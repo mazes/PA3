@@ -21,10 +21,9 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-#define CHK_NULL(x) if ((x)==NULL) exit (1)
-#define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
-#define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
-  /* the address of a connection. */
+
+/* This can be used to build instances of GTree that index on
+   the address of a connection. */
 int sockaddr_in_cmp(const void *addr1, const void *addr2)
 {
         const struct sockaddr_in *_addr1 = addr1;
@@ -47,24 +46,70 @@ int sockaddr_in_cmp(const void *addr1, const void *addr2)
         return 0;
 }
 
-static SSL *server_ssl;
+void ShowCerts(SSL* ssl)
+{   X509 *cert;
+    char *line;
+
+    cert = SSL_get_peer_certificate(ssl); /* Get certificates (if available) */
+    if ( cert != NULL )
+    {
+        printf("Server certificates:\n");
+        line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+        printf("Subject: %s\n", line);
+        free(line);
+        line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+        printf("Issuer: %s\n", line);
+        free(line);
+        X509_free(cert);
+    }
+    else
+        printf("No certificates.\n");
+}
+
+void Servlet(SSL* ssl) /* Serve the connection -- threadable */
+{   char message[512];
+    char reply[512];
+    int sd, bytes;
+    const char* Welc="Welcome!";
+
+    if ( SSL_accept(ssl) == FAIL ){     /* do SSL-protocol accept */
+        perror("SSL_accept()");
+    }
+    else{
+        ShowCerts(ssl);        /* get any certificates */
+        message = SSL_read(ssl, message, sizeof(message)); /* get request */
+        if ( message > 0 ){
+            buf[message] = 0;
+            printf("Client msg: \"%s\"\n", message);
+            sprintf(reply, Welc, buf);   /* construct reply */
+            SSL_write(ssl, reply, strlen(reply)); /* send reply */
+        }
+        else
+            ERR_print_errors_fp(stderr);
+    }
+    sd = SSL_get_fd(ssl);       /* get socket connection */
+    SSL_free(ssl);         /* release SSL state */
+    close(sd);          /* close connection */
+}
 
 int main(int argc, char **argv)
 {
-        int sockfd, accSocket, err;
+        int sockfd;
+        int accSocket;
         struct sockaddr_in server, client;
         char message[512];
 
         /* Initialize OpenSSL */
         SSL_library_init();
         SSL_load_error_strings();
+        OpenSSL_add_all_algorithms();
         SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_client_method());
 
-        if(SSL_CTX_use_certificate_file(ssl_ctx,"../data/server.crt", SSL_FILETYPE_PEM) <= 0){
+        if(!SSL_CTX_use_certificate_file(ssl_ctx,"../data/fd.crt", SSL_FILETYPE_PEM)){
            perror("SSL_CTX_use_certificate_file()");
            exit(-1);
         }
-        if(SSL_CTX_use_PrivateKey_file(ssl_ctx,"../data/server.key", SSL_FILETYPE_PEM) <= 0){
+        if(!SSL_CTX_use_PrivateKey_file(ssl_ctx,"../data/fd.key", SSL_FILETYPE_PEM)){
            perror("SSL_CTX_use_PrivateKey_file()");
            exit(-1);
         }
@@ -72,96 +117,70 @@ int main(int argc, char **argv)
           perror("private key no match");
           exit(-1);
         }
-        if (SSL_CTX_load_verify_locations(ssl_ctx, NULL, "../data/server.crt") <= 0){
+      /*  if (!SSL_CTX_load_verify_locations(ssl_ctx, NULL, "../data/fd.crt")){
           perror("SSL_CTX_load_verify_locations()");
           exit(-1);
         }
         else{
           SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
           SSL_CTX_set_verify_depth(ssl_ctx, 1);
-        }
+        } */
 
         /* Create and bind a TCP socket */
-        sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		CHK_ERR(sockfd, "socket");
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
         memset(&server, 0, sizeof(server));
         server.sin_family = AF_INET;
         /* Network functions need arguments in network byte order instead of
            host byte order. The macros htonl, htons convert the values, */
         server.sin_addr.s_addr = htonl(INADDR_ANY);
         server.sin_port = htons(atoi(argv[1]));
-        err = bind(sockfd, (struct sockaddr *) &server, (socklen_t) sizeof(server));
-		CHK_ERR(err, "bind");
+        bind(sockfd, (struct sockaddr *) &server, (socklen_t) sizeof(server));
+
 	/* Before we can accept messages, we have to listen to the port. We allow one
 	 * 1 connection to queue for simplicity.
 	 */
-	err = listen(sockfd, 1);
-	CHK_ERR(err, "listen");
-
-	socklen_t clientLength = (socklen_t) sizeof(client);
-	//int clientLength = sizeof(client);
-  	accSocket = accept(sockfd, (struct sockaddr*)&client, &clientLength);
-	CHK_ERR(accSocket, "accept");
-  
-    printf ("Connection from %lx, port %x\n", client.sin_addr.s_addr, client.sin_port);
-  
-	printf("after accept():\n");
-
-  server_ssl = SSL_new(ssl_ctx);
-  SSL_set_fd(server_ssl, accSocket);
-  SSL_accept(server_ssl);
-      /* Informational output (optional) */
-       printf("SSL connection using %s\n", SSL_get_cipher (server_ssl));
+	if(listen(sockfd, 5) != 0){
+    perror("listen()");
+  }
         for (;;) {
-                fd_set rfds;
-                struct timeval tv;
-                int retval;
+          SSL *server_ssl;
+          fd_set rfds;
+          struct timeval tv;
+          int retval;
 
-                /* Check whether there is data on the socket fd. */
-                FD_ZERO(&rfds);
-                FD_SET(sockfd, &rfds);
+          /* Check whether there is data on the socket fd. */
+          FD_ZERO(&rfds);
+          FD_SET(sockfd, &rfds);
 
-                /* Wait for five seconds. */
-                tv.tv_sec = 5;
-                tv.tv_usec = 0;
-                retval = select(sockfd + 1, &rfds, NULL, NULL, &tv);
+          /* Wait for five seconds. */
+          tv.tv_sec = 5;
+          tv.tv_usec = 0;
+          retval = select(sockfd + 1, &rfds, NULL, NULL, &tv);
 
-                if (retval == -1) {
-                        perror("select()");
-                } else if (retval > 0) {
-                        /* Data is available, receive it. */
-                        assert(FD_ISSET(sockfd, &rfds));
+          if (retval == -1) {
+                  perror("select()");
+          } else if (retval > 0) {
+                  /* Data is available, receive it. */
+                  assert(FD_ISSET(sockfd, &rfds));
+                  /* Copy to len, since recvfrom may change it. */
+                  socklen_t len = (socklen_t) sizeof(client);
+                  /* For TCP connectios, we first have to accept. */
+                  if(accSocket = accept(sockfd, (struct sockaddr*)&client, &len) < 0){
+                    perror("accept()");
+                    exit(-1);
+                  }
+                  else{
+                    printf ("Connection from %lx, port %x\n", client.sin_addr.s_addr, client.sin_port);
+                  }
+                  server_ssl = SSL_new(ssl_ctx);
+                  SSL_set_fd(server_ssl, accSocket);
+                  Servlet(server_ssl);
 
-                        /* Copy to len, since recvfrom may change it. */
-                        socklen_t len = (socklen_t) sizeof(client);
-
-                        /* For TCP connectios, we first have to accept. */
-                        int connfd;
-                        connfd = accept(sockfd, (struct sockaddr *) &client,
-                                        &len);
-
-                        /* Receive one byte less than declared,
-                           because it will be zero-termianted
-                           below. */
-                        ssize_t n = read(connfd, message, sizeof(message) - 1);
-
-                        /* Send the message back. */
-                        write(connfd, message, (size_t) n);
-
-                        /* We should close the connection. */
-                        shutdown(connfd, SHUT_RDWR);
-                        close(connfd);
-
-                        /* Zero terminate the message, otherwise
-                           printf may access memory outside of the
-                           string. */
-                        message[n] = '\0';
-                        /* Print the message to stdout and flush. */
-                        fprintf(stdout, "Received:\n%s\n", message);
-                        fflush(stdout);
-                } else {
-                        fprintf(stdout, "No message in five seconds.\n");
-                        fflush(stdout);
-                }
+          } else {
+                  fprintf(stdout, "No message in five seconds.\n");
+                  fflush(stdout);
+          }
         }
+        close(sockfd);
+        SSL_CTX_free(ssl_ctx);
 }

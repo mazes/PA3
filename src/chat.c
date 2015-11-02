@@ -31,7 +31,7 @@
 
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
-#define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); } 
+#define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
 /* This variable is 1 while the client is active and becomes 0 after
    a quit command to terminate the client and to clean up the
@@ -253,10 +253,33 @@ void readline_callback(char *line)
         fsync(STDOUT_FILENO);
 }
 
+void ShowCerts(SSL* ssl)
+{   X509 *cert;
+    char *line;
+
+    cert = SSL_get_peer_certificate(ssl); /* get the server's certificate */
+    if ( cert != NULL )
+    {
+        printf("Server certificates:\n");
+        line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+        printf("Subject: %s\n", line);
+        free(line);       /* free the malloc'ed string */
+        line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+        printf("Issuer: %s\n", line);
+        free(line);       /* free the malloc'ed string */
+        X509_free(cert);     /* free the malloc'ed certificate copy */
+    }
+    else
+        printf("No certificates.\n");
+}
+
 int main(int argc, char **argv)
 {
+	struct sockaddr_in server;
+	char message[512];
 	/* Initialize OpenSSL */
 	SSL_library_init();
+	OpenSSL_add_all_algorithms();
 	SSL_load_error_strings();
 	SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_client_method());
 
@@ -268,7 +291,7 @@ int main(int argc, char **argv)
 	 * a server side key data base can be used to authenticate the
 	 * client.
 	 */
-	if(!SSL_CTX_use_certificate_file(ssl_ctx,"../data/client.crt", SSL_FILETYPE_PEM)){
+	/*if(!SSL_CTX_use_certificate_file(ssl_ctx,"../data/client.crt", SSL_FILETYPE_PEM)){
 		 perror("SSL_CTX_use_certificate_file()");
 		 exit(-1);
 	}
@@ -292,13 +315,13 @@ int main(int argc, char **argv)
 	*load client certificates?  if so, load with the same certificates? \wondering
 	*/
 
-	server_ssl = SSL_new(ssl_ctx);
+
 
 	/* Create and set up a listening socket. The sockets you
 	 * create here can be used in select calls, so do not forget
 	 * them.
 	 */
-	 struct sockaddr_in server;
+
 
 		server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if(server_fd <= 0){
@@ -314,6 +337,7 @@ int main(int argc, char **argv)
 	CHK_ERR(err, "connect");
 
 	/* Use the socket for the SSL connection. */
+	server_ssl = SSL_new(ssl_ctx);
 	SSL_set_fd(server_ssl, server_fd);
 
 	/* Now we can create BIOs and use them instead of the socket.
@@ -328,19 +352,18 @@ int main(int argc, char **argv)
 					perror("SSL_connect()");
 					exit(-1);
 				}
-
         /* Read characters from the keyboard while waiting for input.
          */
         prompt = strdup("> ");
         rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
         while (active) {
-                fd_set rfds;
+    					 fd_set rfds;
 		struct timeval timeout;
 
                 FD_ZERO(&rfds);
                 FD_SET(STDIN_FILENO, &rfds);
-		timeout.tv_sec = 5;
-		timeout.tv_usec = 0;
+								timeout.tv_sec = 5;
+								timeout.tv_usec = 0;
 
                 int r = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &timeout);
                 if (r < 0) {
@@ -359,15 +382,22 @@ int main(int argc, char **argv)
                         fsync(STDOUT_FILENO);
                         /* Whenever you print out a message, call this
                            to reprint the current input line. */
-			rl_redisplay();
+												rl_redisplay();
                         continue;
                 }
                 if (FD_ISSET(STDIN_FILENO, &rfds)) {
                         rl_callback_read_char();
                 }
-
+								int readBytes;
+								char *customMessage;
                 /* Handle messages from the server here! */
+								printf("Connected with %s encryption\n", SSL_get_cipher(server_ssl));
+								ShowCerts(ssl);
+								SSL_Write(server_ssl, customMessage, strlen(customMessage));
+								readBytes = SSL_read(server_ssl, message, sizeof(message));
+								message[readBytes] = '\0';
+								printf("received: %s\n", message);
         }
-        /* replace by code to shutdown the connection and exit
-           the program. */
+				close(server_fd);
+				SSL_CTX_free(ssl_ctx);
 }
