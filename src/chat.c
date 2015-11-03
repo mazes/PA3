@@ -273,6 +273,23 @@ void ShowCerts(SSL* ssl)
         printf("No certificates.\n");
 }
 
+int getSocket(int port){
+	fd = socket(PF_INET, SOCK_STREAM, 0);
+	if(server_fd <= 0){
+	 	perror("socket()");
+	 	exit(-1);
+	}
+  memset(&server, 0, sizeof(server));
+  server.sin_family = AF_INET;
+  server.sin_addr.s_addr = INADDR_ANY;
+	server.sin_port = htons(port);
+
+	int err = connect(server_fd, (struct sockaddr*)&server, sizeof(server));
+	CHK_ERR(err, "connect");
+
+	return fd;
+}
+
 int main(int argc, char **argv)
 {
 	struct sockaddr_in server;
@@ -291,27 +308,6 @@ int main(int argc, char **argv)
 	 * a server side key data base can be used to authenticate the
 	 * client.
 	 */
-	if(!SSL_CTX_use_certificate_file(ssl_ctx,"../data/client.crt", SSL_FILETYPE_PEM)){
-		 perror("SSL_CTX_use_certificate_file()");
-		 exit(-1);
-	}
-	if(!SSL_CTX_use_PrivateKey_file(ssl_ctx,"../data/client.key", SSL_FILETYPE_PEM)){
-		 perror("SSL_CTX_use_PrivateKey_file()");
- 		 exit(-1);
-	}
-	if(!SSL_CTX_check_private_key(ssl_ctx)){
-		perror("private key no match");
-		exit(-1);
-	}
-
-	if (!SSL_CTX_load_verify_locations(ssl_ctx, NULL, "../data/client.crt")){
-
-		perror("SSL_CTX_load_verify_locations()");
-		exit(-1);
-	}
-	SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
-	SSL_CTX_set_verify_depth(ssl_ctx, 1);
-	*load client certificates?  if so, load with the same certificates? \wondering
 
 
 	/* Create and set up a listening socket. The sockets you
@@ -319,20 +315,7 @@ int main(int argc, char **argv)
 	 * them.
 	 */
 
-
-		server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if(server_fd <= 0){
-		 perror("socket()");
-		 exit(-1);
-	 }
-	 memset(&server, 0, sizeof(server));
-	 server.sin_family = AF_INET;
-	 server.sin_addr.s_addr = INADDR_ANY;
-	 server.sin_port = htons(atoi(argv[2]));
-
-	 printf("Before connect()\n");
-	int err = connect(server_fd, (struct sockaddr*)&server, sizeof(server));
-	CHK_ERR(err, "connect");
+	server_fd = getSocket(atoi(argv[2]));
 
 	/* Use the socket for the SSL connection. */
 	server_ssl = SSL_new(ssl_ctx);
@@ -346,9 +329,8 @@ int main(int argc, char **argv)
 	 */
 	 			printf("Before SSL_connect()\n");
         /* Set up secure connection to the chatd server. */
-				if(SSL_connect(server_ssl) != 1){
-					perror("SSL_connect()");
-					exit(-1);
+				if(SSL_connect(server_ssl) == -1){
+					CHK(server_ssl);
 				}
         /* Read characters from the keyboard while waiting for input.
          */
@@ -396,6 +378,7 @@ int main(int argc, char **argv)
 								readBytes = SSL_read(server_ssl, message, sizeof(message));
 								message[readBytes] = '\0';
 								printf("received: %s\n", message);
+								SSL_free(server_ssl);
         }
 				close(server_fd);
 				SSL_CTX_free(ssl_ctx);
