@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -143,6 +144,10 @@ int main(int argc, char **argv)
         struct sockaddr_in client;
         char message[512];
 
+        if(argc < 2){
+          perror("only use port as argument");
+          exit(-1);
+        }
         /* Initialize OpenSSL */
         SSL_library_init();
         SSL_load_error_strings();
@@ -174,7 +179,7 @@ int main(int argc, char **argv)
                   socklen_t len = (socklen_t) sizeof(client);
                   /* For TCP connectios, we first have to accept. */
                   accSocket = accept(sockfd, (struct sockaddr*)&client, &len);
-                    printf ("Connection from %d, port %d\n",
+                    printf ("Connection from %s, port %d\n",
                       inet_ntoa(client.sin_addr), ntohs(client.sin_port));
 
                   server_ssl = SSL_new(ssl_ctx);

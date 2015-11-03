@@ -332,7 +332,8 @@ int main(int argc, char **argv){
 	 			printf("Before SSL_connect()\n");
         /* Set up secure connection to the chatd server. */
 				if(SSL_connect(server_ssl) == -1){
-					CHK_SSL(server_ssl);
+					perror("SSL_connect()");
+					exit(-1);
 				}
         /* Read characters from the keyboard while waiting for input.
          */
