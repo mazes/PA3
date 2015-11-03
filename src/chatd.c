@@ -64,8 +64,10 @@ void LoadServerCertificates(SSL_CTX* ssl_ctx, char* cert, char* key){
 }
 
 int getSocket(int port){
+  int sockfd;
+  struct sockaddr_in server;
   /* Create and bind a TCP socket */
-  fd = socket(AF_INET, SOCK_STREAM, 0);
+  sockfd = socket(AF_INET, SOCK_STREAM, 0);
   memset(&server, 0, sizeof(server));
   server.sin_family = AF_INET;
   /* Network functions need arguments in network byte order instead of
@@ -77,40 +79,11 @@ int getSocket(int port){
    * 1 connection to queue for simplicity.
    */
   printf("listening... ");
-  if(listen(fd, 5) != 0){
+  if(listen(sockfd, 5) != 0){
     perror("listen()");
   }
 
-	return fd;
-}
-
-void serveData(SSL* ssl){
-  char message[512];
-  char reply[512];
-  int read, fd, err;
-  const char* greeting "Welcome!";
-
-  err = SSL_accept(ssl);
-  CHK_SSL(err);
-
-  ShowCerts(ssl);
-
-  read = SSL_read(ssl, message, sizeof(message));
-  if(read > 0){
-      message[read] = 0;
-      printf("Client msg: %s\n", message);
-      err = sprintf(reply, greeting);
-      if(err < 0){
-        printf("sprintf ret negative");
-      }
-      SSL_write(ssl, reply, strlen(reply));
-  }
-  else{
-      SSL_CHK(read);
-  }
-  fd = SSL_get_fd(ssl);
-  SSL_free(ssl);
-  close(fd);
+	return sockfd;
 }
 
 void ShowCerts(SSL* ssl)
@@ -133,11 +106,41 @@ void ShowCerts(SSL* ssl)
         printf("No certificates.\n");
 }
 
+
+void serveData(SSL* ssl){
+  char message[512];
+  char reply[512];
+  int read, fd, err;
+  const char* greeting = "Welcome!";
+
+  err = SSL_accept(ssl);
+  CHK_SSL(err);
+
+  ShowCerts(ssl);
+
+  read = SSL_read(ssl, message, sizeof(message));
+  if(read > 0){
+      message[read] = 0;
+      printf("Client msg: %s\n", message);
+      err = sprintf(reply, greeting);
+      if(err < 0){
+        printf("sprintf ret negative");
+      }
+      SSL_write(ssl, reply, strlen(reply));
+  }
+  else{
+      CHK_SSL(read);
+  }
+  fd = SSL_get_fd(ssl);
+  SSL_free(ssl);
+  close(fd);
+}
+
 int main(int argc, char **argv)
 {
         int sockfd;
         int accSocket;
-        struct sockaddr_in server, client;
+        struct sockaddr_in client;
         char message[512];
 
         /* Initialize OpenSSL */
@@ -174,7 +177,7 @@ int main(int argc, char **argv)
                     perror("accept()");
                     exit(-1);
                   }
-                    printf ("Connection from %lx, port %x\n",
+                    printf ("Connection from %s, port %d\n",
                       inet_ntoa(client.sin_addr), ntohs(client.sin_port));
 
                   server_ssl = SSL_new(ssl_ctx);
