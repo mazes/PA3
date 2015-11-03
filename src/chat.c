@@ -253,8 +253,8 @@ void readline_callback(char *line)
         fsync(STDOUT_FILENO);
 }
 
-void ShowCerts(SSL* ssl)
-{   X509 *cert;
+void ShowCerts(SSL* ssl){
+	  X509 *cert;
     char *line;
 
     cert = SSL_get_peer_certificate(ssl); /* get the server's certificate */
@@ -269,13 +269,17 @@ void ShowCerts(SSL* ssl)
         free(line);       /* free the malloc'ed string */
         X509_free(cert);     /* free the malloc'ed certificate copy */
     }
-    else
+    else{
         printf("No certificates.\n");
+		}
 }
 
 int getSocket(int port){
+	int fd;
+	struct sockaddr_in server;
+
 	fd = socket(PF_INET, SOCK_STREAM, 0);
-	if(server_fd <= 0){
+	if(fd <= 0){
 	 	perror("socket()");
 	 	exit(-1);
 	}
@@ -284,15 +288,13 @@ int getSocket(int port){
   server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port = htons(port);
 
-	int err = connect(server_fd, (struct sockaddr*)&server, sizeof(server));
+	int err = connect(fd, (struct sockaddr*)&server, sizeof(server));
 	CHK_ERR(err, "connect");
 
 	return fd;
 }
 
-int main(int argc, char **argv)
-{
-	struct sockaddr_in server;
+int main(int argc, char **argv){
 	char message[512];
 	/* Initialize OpenSSL */
 	SSL_library_init();
@@ -330,7 +332,7 @@ int main(int argc, char **argv)
 	 			printf("Before SSL_connect()\n");
         /* Set up secure connection to the chatd server. */
 				if(SSL_connect(server_ssl) == -1){
-					CHK(server_ssl);
+					CHK_SSL(server_ssl);
 				}
         /* Read characters from the keyboard while waiting for input.
          */

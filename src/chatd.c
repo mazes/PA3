@@ -122,7 +122,7 @@ void serveData(SSL* ssl){
   if(read > 0){
       message[read] = 0;
       printf("Client msg: %s\n", message);
-      err = sprintf(reply, greeting);
+      err = sprintf(reply, "%s" ,greeting);
       if(err < 0){
         printf("sprintf ret negative");
       }
@@ -173,11 +173,8 @@ int main(int argc, char **argv)
                   /* Copy to len, since recvfrom may change it. */
                   socklen_t len = (socklen_t) sizeof(client);
                   /* For TCP connectios, we first have to accept. */
-                  if(accSocket = accept(sockfd, (struct sockaddr*)&client, &len) < 0){
-                    perror("accept()");
-                    exit(-1);
-                  }
-                    printf ("Connection from %s, port %d\n",
+                  accSocket = accept(sockfd, (struct sockaddr*)&client, &len);
+                    printf ("Connection from %d, port %d\n",
                       inet_ntoa(client.sin_addr), ntohs(client.sin_port));
 
                   server_ssl = SSL_new(ssl_ctx);
