@@ -2,3 +2,5 @@ Makefile
 chat
 chatd
 *DS_STORE*
+chatd.o
+chat.o
