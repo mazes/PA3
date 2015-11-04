@@ -340,7 +340,8 @@ int main(int argc, char **argv){
 				 printf("Before prompt\n");
         prompt = strdup("> ");
         rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
-        while (active) {
+				rl_callback_read_char();
+				while (active) {
     					 fd_set rfds;
 		struct timeval timeout;
 
