@@ -184,8 +184,9 @@ int main(int argc, char **argv)
 				  if(accSocket < 0){
 						perror("accept()");
 						exit(-1);
-				  }       char reply[512];
-                  memset(%reply, 0, sizeof(reply));
+				  }       
+			//	char reply[512];
+                //  memset(&reply, 0, sizeof(reply));
                     printf ("Connection from %s, port %d\n",
                       inet_ntoa(client.sin_addr), ntohs(client.sin_port));
                   int fd, err;
@@ -194,7 +195,7 @@ int main(int argc, char **argv)
                   printf("Before Servlet()");
                   err = SSL_accept(server_ssl);
                   CHK_SSL(err);
-                  err = SSL_write(server_ssl, reply, strlen(reply));
+                  err = SSL_write(server_ssl, "WELCOME!", 8);
                   CHK_SSL(err);
                   //serveData(server_ssl);
                   fd = SSL_get_fd(server_ssl);
