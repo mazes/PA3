@@ -171,7 +171,7 @@ int main(int argc, char **argv)
     struct timeval tv;
     int retval;
     maxFD = sockfd;
-    FD_ZERO(&master)
+    FD_ZERO(&master);
     FD_ZERO(&rfds);
     FD_SET(sockfd, &master);
 
