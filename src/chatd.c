@@ -193,9 +193,12 @@ int main(int argc, char **argv)
                   printf("Before Servlet()");
                   err = SSL_accept(ssl);
                   CHK_SSL(err);
-                    err = SSL_write(ssl, reply, strlen(reply));
+                  err = SSL_write(ssl, reply, strlen(reply));
                   CHK_SSL(err);
                   //serveData(server_ssl);
+                  fd = SSL_get_fd(ssl);
+                SSL_free(ssl);
+                close(fd);
         }
         printf("Before close()\n");
         close(sockfd);
