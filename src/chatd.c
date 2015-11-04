@@ -79,7 +79,7 @@ int getSocket(int port){
   /* Before we can accept messages, we have to listen to the port. We allow one
    * 1 connection to queue for simplicity.
    */
-  printf("listening... ");
+  printf("listening...\n");
   if(listen(sockfd, 5) != 0){
     perror("listen()");
   }
@@ -117,24 +117,26 @@ void serveData(SSL* ssl){
   err = SSL_accept(ssl);
   CHK_SSL(err);
 
-  ShowCerts(ssl);
-
   read = SSL_read(ssl, message, sizeof(message));
   if(read > 0){
       message[read] = 0;
       printf("Client msg: %s\n", message);
-      err = sprintf(reply, "%s" ,greeting);
-      if(err < 0){
-        printf("sprintf ret negative");
-      }
-      SSL_write(ssl, reply, strlen(reply));
   }
   else{
+		printf("read is <=0\n");
       CHK_SSL(read);
   }
-  fd = SSL_get_fd(ssl);
-  SSL_free(ssl);
-  close(fd);
+	err = sprintf(reply, "%s" ,greeting);
+    if(err < 0){
+        printf("sprintf returns negative\n");
+    }
+
+    err = SSL_write(ssl, reply, strlen(reply));
+	CHK_SSL(err);
+	printf("wrote with SSL_write()");
+  	fd = SSL_get_fd(ssl);
+ 	SSL_free(ssl);
+ 	close(fd);
 }
 
 int main(int argc, char **argv)
@@ -179,6 +181,10 @@ int main(int argc, char **argv)
                   socklen_t len = (socklen_t) sizeof(client);
                   /* For TCP connectios, we first have to accept. */
                   accSocket = accept(sockfd, (struct sockaddr*)&client, &len);
+				  if(accSocket < 0){
+						perror("accept()");
+						exit(-1);
+				  }
                     printf ("Connection from %s, port %d\n",
                       inet_ntoa(client.sin_addr), ntohs(client.sin_port));
 

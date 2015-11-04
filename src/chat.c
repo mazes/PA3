@@ -374,10 +374,6 @@ int main(int argc, char **argv){
                 }
 								/* Handle messages from the server here! */
 								int readBytes;
-								char *customMessage = "Hello";
-								printf("Connected with %s encryption\n", SSL_get_cipher(server_ssl));
-								ShowCerts(server_ssl);
-								SSL_write(server_ssl, customMessage, strlen(customMessage));
 								readBytes = SSL_read(server_ssl, message, sizeof(message));
 								message[readBytes] = '\0';
 								printf("received: %s\n", message);
