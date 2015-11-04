@@ -296,6 +296,7 @@ int getSocket(int port){
 
 int main(int argc, char **argv){
 	char message[512];
+
 	/* Initialize OpenSSL */
 	SSL_library_init();
 	OpenSSL_add_all_algorithms();
@@ -337,10 +338,14 @@ int main(int argc, char **argv){
 				}
         /* Read characters from the keyboard while waiting for input.
          */
-				 printf("Before prompt\n");
+				memset(&message, 0, sizeof(message));
+				err = SSL_read(server_ssl, message, sizeof(message));
+				CHK_SSL(err);
+				message[err] = '\0';
+				printf("message from server: %s\n"message);
+				printf("Before prompt\n");
         prompt = strdup("> ");
         rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
-				rl_callback_read_char();
 				while (active) {
     					 fd_set rfds;
 		struct timeval timeout;
@@ -373,12 +378,7 @@ int main(int argc, char **argv){
                         continue;
                 }else{
 									printf("r > 0\n");
-									int readBytes;
-									readBytes = SSL_read(server_ssl, message, sizeof(message));
-									CHK_SSL(readBytes);
-									message[readBytes] = '\0';
-									printf("received: %s\n", message);
-									SSL_free(server_ssl);
+
 								}
                 if (FD_ISSET(STDIN_FILENO, &rfds)) {
 								printf("rl_callback_read_char()\n");
@@ -387,6 +387,7 @@ int main(int argc, char **argv){
 								/* Handle messages from the server here! */
 
         }
+				SSL_free(server_ssl);
 				close(server_fd);
 				SSL_CTX_free(ssl_ctx);
 }
