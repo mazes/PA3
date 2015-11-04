@@ -187,7 +187,7 @@ int main(int argc, char **argv)
 				  }
                     printf ("Connection from %s, port %d\n",
                       inet_ntoa(client.sin_addr), ntohs(client.sin_port));
-
+                  int fd, err;
                   server_ssl = SSL_new(ssl_ctx);
                   SSL_set_fd(server_ssl, accSocket);
                   printf("Before Servlet()");
