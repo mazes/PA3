@@ -350,8 +350,9 @@ int main(int argc, char **argv){
 								timeout.tv_usec = 0;
 
                 int r = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &timeout);
-								printf("select returns:%d\n");
+								printf("select returns:%d\n", r);
                 if (r < 0) {
+												printf("select < 0\n");
                         if (errno == EINTR) {
                                 /* This should either retry the call or
                                    exit the loop, depending on whether we
