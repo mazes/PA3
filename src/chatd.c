@@ -133,7 +133,7 @@ void serveData(SSL* ssl){
 
     err = SSL_write(ssl, reply, strlen(reply));
 	CHK_SSL(err);
-	printf("wrote with SSL_write()");
+	printf("wrote with SSL_write()%s\n", reply);
   	fd = SSL_get_fd(ssl);
  	SSL_free(ssl);
  	close(fd);

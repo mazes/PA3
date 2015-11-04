@@ -370,14 +370,16 @@ int main(int argc, char **argv){
                         continue;
                 }
                 if (FD_ISSET(STDIN_FILENO, &rfds)) {
-                        rl_callback_read_char();
-                }
-								/* Handle messages from the server here! */
 								int readBytes;
 								readBytes = SSL_read(server_ssl, message, sizeof(message));
 								message[readBytes] = '\0';
 								printf("received: %s\n", message);
 								SSL_free(server_ssl);
+						printf("rl_callback_read_char()\n");
+                        rl_callback_read_char();
+                }
+								/* Handle messages from the server here! */
+
         }
 				close(server_fd);
 				SSL_CTX_free(ssl_ctx);
