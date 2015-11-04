@@ -336,6 +336,7 @@ int main(int argc, char **argv){
 					perror("SSL_connect()");
 					exit(-1);
 				}
+				printf("Before SSL_read()");
         /* Read characters from the keyboard while waiting for input.
          */
 				memset(&message, 0, sizeof(message));

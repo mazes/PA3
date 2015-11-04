@@ -178,8 +178,9 @@ int main(int argc, char **argv)
       tv.tv_usec = 0;
       printf("calling select()\n");
       retval = select(maxFD + 1, &rfds, NULL, NULL, &tv);
-      for(int i = 0; i < maxFD; i++){
-        if(FD_ISSET(i,&rfds)){
+      for(int i = 0; i <= maxFD; i++){
+        printf("i=%d\n", i);
+        if(FD_ISSET(i, &rfds)){
           printf("FD IS SET\n");
           if(i == sockfd){
             printf("i == sockfd\n");
