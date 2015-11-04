@@ -184,9 +184,7 @@ int main(int argc, char **argv)
 				  if(accSocket < 0){
 						perror("accept()");
 						exit(-1);
-				  }       
-			//	char reply[512];
-                //  memset(&reply, 0, sizeof(reply));
+					}
                     printf ("Connection from %s, port %d\n",
                       inet_ntoa(client.sin_addr), ntohs(client.sin_port));
                   int fd, err;

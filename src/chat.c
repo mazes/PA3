@@ -135,7 +135,7 @@ static char *prompt;
    handle the user requests in this function. The client handles the
    server messages in the loop in main(). */
 void readline_callback(char *line)
-{
+{				printf("readline_callback()\n");
         char buffer[256];
         if (NULL == line) {
                 rl_callback_handler_remove();
