@@ -75,7 +75,7 @@ int getSocket(int port){
      host byte order. The macros htonl, htons convert the values, */
   server.sin_addr.s_addr = htonl(INADDR_ANY);
   server.sin_port = htons(port);
-  if(bind(sockfd, (struct sockaddr *) &server, (socklen_t) sizeof(server) == -1){
+  if(bind(sockfd, (struct sockaddr *) &server, (socklen_t) sizeof(server)) == -1){
     perror("bind():");
   }
 
@@ -83,7 +83,7 @@ int getSocket(int port){
    * 1 connection to queue for simplicity.
    */
   printf("listening...\n");
-  if(listen(sockfd, 5) == 0){
+  if(listen(sockfd, 5) != 0){
     perror("listen()");
   }
 

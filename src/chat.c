@@ -359,7 +359,7 @@ int main(int argc, char **argv){
                 int r = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &timeout);
 								printf("select returns:%d\n", r);
                 if (r < 0) {
-												printf("select < 0\n");
+						printf("select < 0\n");
                         if (errno == EINTR) {
                                 /* This should either retry the call or
                                    exit the loop, depending on whether we
