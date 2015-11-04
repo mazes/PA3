@@ -167,14 +167,16 @@ int main(int argc, char **argv)
     server_ssl = SSL_new(ssl_ctx);
     SSL_set_fd(server_ssl, sockfd);
 
-    fd_set rfds;
+    fd_set rfds, master;
     struct timeval tv;
     int retval;
     maxFD = sockfd;
+    FD_ZERO(&master)
     FD_ZERO(&rfds);
-    FD_SET(sockfd, &rfds);
+    FD_SET(sockfd, &master);
 
     for (;;) {
+      memcpy(&rfds, &master, sizeof(rfds));
       /* Check whether there is data on the socket fd. */
       /* Wait for five seconds. */
       tv.tv_sec = 5;
@@ -207,6 +209,7 @@ int main(int argc, char **argv)
             }
             err = SSL_write(server_ssl, reply, strlen(reply));
             CHK_SSL(err);
+            FD_CLR(sockfd, &rfds);
           }
           else{
               if (retval == -1) {
