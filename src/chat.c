@@ -181,7 +181,7 @@ void readline_callback(char *line)
 
                 /* Maybe update the prompt. */
                 free(prompt);
-                prompt = NULL; /* What should the new prompt look like? */
+                prompt = strdup(chatroom); /* What should the new prompt look like? */
 		rl_set_prompt(prompt);
                 return;
         }
@@ -349,7 +349,7 @@ int main(int argc, char **argv){
         rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
 				while (active) {
     					 fd_set rfds;
-		struct timeval timeout;
+							 struct timeval timeout;
 
                 FD_ZERO(&rfds);
                 FD_SET(STDIN_FILENO, &rfds);
@@ -378,7 +378,6 @@ int main(int argc, char **argv){
 												rl_redisplay();
                         continue;
                 }else{
-									printf("r > 0\n");
 
 								}
                 if (FD_ISSET(STDIN_FILENO, &rfds)) {
