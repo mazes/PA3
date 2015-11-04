@@ -350,6 +350,7 @@ int main(int argc, char **argv){
 								timeout.tv_usec = 0;
 
                 int r = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &timeout);
+								printf("select returns:%d\n");
                 if (r < 0) {
                         if (errno == EINTR) {
                                 /* This should either retry the call or
@@ -368,14 +369,16 @@ int main(int argc, char **argv){
                            to reprint the current input line. */
 												rl_redisplay();
                         continue;
-                }
+                }else{
+									printf("r > 0\n");
+									int readBytes;
+									readBytes = SSL_read(server_ssl, message, sizeof(message));
+									message[readBytes] = '\0';
+									printf("received: %s\n", message);
+									SSL_free(server_ssl);
+								}
                 if (FD_ISSET(STDIN_FILENO, &rfds)) {
-								int readBytes;
-								readBytes = SSL_read(server_ssl, message, sizeof(message));
-								message[readBytes] = '\0';
-								printf("received: %s\n", message);
-								SSL_free(server_ssl);
-						printf("rl_callback_read_char()\n");
+								printf("rl_callback_read_char()\n");
                         rl_callback_read_char();
                 }
 								/* Handle messages from the server here! */
