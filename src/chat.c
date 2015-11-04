@@ -374,6 +374,7 @@ int main(int argc, char **argv){
 									printf("r > 0\n");
 									int readBytes;
 									readBytes = SSL_read(server_ssl, message, sizeof(message));
+									CHK_SSL(readBytes);
 									message[readBytes] = '\0';
 									printf("received: %s\n", message);
 									SSL_free(server_ssl);
