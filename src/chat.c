@@ -339,11 +339,11 @@ int main(int argc, char **argv){
 				printf("Before SSL_read()\n");
         /* Read characters from the keyboard while waiting for input.
          */
-			/*	memset(&message, 0, sizeof(message));
+				memset(&message, 0, sizeof(message));
 				err = SSL_read(server_ssl, message, sizeof(message));
 				CHK_SSL(err);
 				message[err] = '\0';
-				printf("message from server: %s\n", message);*/
+				printf("message from server: %s\n", message);
 				printf("Before prompt\n");
         prompt = strdup("> ");
         rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
@@ -382,7 +382,6 @@ int main(int argc, char **argv){
 
 								}
                 if (FD_ISSET(STDIN_FILENO, &rfds)) {
-								printf("rl_callback_read_char()\n");
                         rl_callback_read_char();
                 }
 								/* Handle messages from the server here! */
