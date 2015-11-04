@@ -296,7 +296,7 @@ int getSocket(int port){
 
 int main(int argc, char **argv){
 	char message[512];
-
+	int err;
 	/* Initialize OpenSSL */
 	SSL_library_init();
 	OpenSSL_add_all_algorithms();
@@ -342,7 +342,7 @@ int main(int argc, char **argv){
 				err = SSL_read(server_ssl, message, sizeof(message));
 				CHK_SSL(err);
 				message[err] = '\0';
-				printf("message from server: %s\n"message);
+				printf("message from server: %s\n", message);
 				printf("Before prompt\n");
         prompt = strdup("> ");
         rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);

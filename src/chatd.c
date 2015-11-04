@@ -141,13 +141,13 @@ void serveData(SSL* ssl){
 
 int main(int argc, char **argv)
 {
-        int sockfd;
+        int sockfd, err;
         int accSocket;
         int maxFD;
         int connfd;
         struct sockaddr_in client;
         char message[512];
-
+		SSL *server_ssl;
         if(argc < 2){
           perror("only use port as argument");
           exit(-1);
@@ -175,6 +175,7 @@ int main(int argc, char **argv)
           /* Wait for five seconds. */
           tv.tv_sec = 5;
           tv.tv_usec = 0;
+
           retval = select(maxFD + 1, &rfds, NULL, NULL, &tv);
           for(int i = 0; i < maxFD; i++){
             if(FD_ISSET(i,&rfds)){
