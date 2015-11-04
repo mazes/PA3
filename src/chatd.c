@@ -184,20 +184,21 @@ int main(int argc, char **argv)
 				  if(accSocket < 0){
 						perror("accept()");
 						exit(-1);
-				  }
+				  }       char reply[512];
+                  memset(%reply, 0, sizeof(reply));
                     printf ("Connection from %s, port %d\n",
                       inet_ntoa(client.sin_addr), ntohs(client.sin_port));
                   int fd, err;
                   server_ssl = SSL_new(ssl_ctx);
                   SSL_set_fd(server_ssl, accSocket);
                   printf("Before Servlet()");
-                  err = SSL_accept(ssl);
+                  err = SSL_accept(server_ssl);
                   CHK_SSL(err);
-                  err = SSL_write(ssl, reply, strlen(reply));
+                  err = SSL_write(server_ssl, reply, strlen(reply));
                   CHK_SSL(err);
                   //serveData(server_ssl);
-                  fd = SSL_get_fd(ssl);
-                SSL_free(ssl);
+                  fd = SSL_get_fd(server_ssl);
+                SSL_free(server_ssl);
                 close(fd);
         }
         printf("Before close()\n");
