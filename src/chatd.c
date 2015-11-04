@@ -141,83 +141,86 @@ void serveData(SSL* ssl){
 
 int main(int argc, char **argv)
 {
-        int sockfd, err;
-        int accSocket;
-        int maxFD;
-        int connfd;
-        struct sockaddr_in client;
-        char message[512];
-        char reply[124];
-		SSL *server_ssl;
-        if(argc < 2){
-          perror("only use port as argument");
-          exit(-1);
-        }
-        /* Initialize OpenSSL */
-        SSL_library_init();
-        SSL_load_error_strings();
-        OpenSSL_add_all_algorithms();
-        SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_server_method());
-        LoadServerCertificates(ssl_ctx, "../data/server.crt", "../data/server.key");
+    int sockfd, err;
+    int accSocket;
+    int maxFD;
+    int connfd;
+    struct sockaddr_in client;
+    char message[512];
+    char reply[124];
+  SSL *server_ssl;
+    if(argc < 2){
+      perror("only use port as argument");
+      exit(-1);
+    }
+    /* Initialize OpenSSL */
+    SSL_library_init();
+    SSL_load_error_strings();
+    OpenSSL_add_all_algorithms();
+    SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_server_method());
+    LoadServerCertificates(ssl_ctx, "../data/server.crt", "../data/server.key");
 
-        sockfd = getSocket(atoi(argv[1]));
-        server_ssl = SSL_new(ssl_ctx);
-        SSL_set_fd(server_ssl, sockfd);
+    sockfd = getSocket(atoi(argv[1]));
+    server_ssl = SSL_new(ssl_ctx);
+    SSL_set_fd(server_ssl, sockfd);
 
-        fd_set rfds;
-        struct timeval tv;
-        int retval;
-        maxFD = sockfd;
-        FD_ZERO(&rfds);
-        FD_SET(sockfd, &rfds);
+    fd_set rfds;
+    struct timeval tv;
+    int retval;
+    maxFD = sockfd;
+    FD_ZERO(&rfds);
+    FD_SET(sockfd, &rfds);
 
-        for (;;) {
-          /* Check whether there is data on the socket fd. */
-          /* Wait for five seconds. */
-          tv.tv_sec = 5;
-          tv.tv_usec = 0;
-
-          retval = select(maxFD + 1, &rfds, NULL, NULL, &tv);
-          for(int i = 0; i < maxFD; i++){
-            if(FD_ISSET(i,&rfds)){
-              if(i == sockfd){
-                //new Connection
-                /* Data is available, receive it. */
-                assert(FD_ISSET(sockfd, &rfds));
-                /* Copy to len, since recvfrom may change it. */
-                socklen_t len = (socklen_t) sizeof(client);
-                /* For TCP connectios, we first have to accept. */
-                connfd = accept(sockfd, (struct sockaddr *) &client,
-                                &len);
-                printf ("Connection from %s, port %d\n",
-                  inet_ntoa(client.sin_addr), ntohs(client.sin_port));
-                SSL_set_fd(server_ssl, connfd);
-                if(SSL_accept(server_ssl) < 0){
-                    perror("SSL_accept()");
-                }
-                err = sprintf(reply, "%s" ,"welcome!");
-                if(err < 0){
-                      printf("sprintf returns negative\n");
-                }
-                err = SSL_write(server_ssl, reply, strlen(reply));
-                CHK_SSL(err);
+    for (;;) {
+      /* Check whether there is data on the socket fd. */
+      /* Wait for five seconds. */
+      tv.tv_sec = 5;
+      tv.tv_usec = 0;
+      printf("calling select()\n");
+      retval = select(maxFD + 1, &rfds, NULL, NULL, &tv);
+      for(int i = 0; i < maxFD; i++){
+        if(FD_ISSET(i,&rfds)){
+          printf("FD IS SET\n");
+          if(i == sockfd){
+            printf("i == sockfd\n");
+            //new Connection
+            /* Data is available, receive it. */
+            assert(FD_ISSET(sockfd, &rfds));
+            /* Copy to len, since recvfrom may change it. */
+            socklen_t len = (socklen_t) sizeof(client);
+            /* For TCP connectios, we first have to accept. */
+            connfd = accept(sockfd, (struct sockaddr *) &client,
+                            &len);
+            printf ("Connection from %s, port %d\n",
+              inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+            SSL_set_fd(server_ssl, connfd);
+            if(SSL_accept(server_ssl) < 0){
+                perror("SSL_accept()");
+            }
+            err = sprintf(reply, "%s" ,"welcome!");
+            if(err < 0){
+                  printf("sprintf returns negative\n");
+            }
+            err = SSL_write(server_ssl, reply, strlen(reply));
+            CHK_SSL(err);
+          }
+          else{
+              if (retval == -1) {
+                      perror("select()");
+              }
+              else if(retval == 0){
+                //nothing to read
+                printf("retval == 0");
               }
               else{
-                  if (retval == -1) {
-                          perror("select()");
-                  }
-                  else if(retval == 0){
-                    //nothing to read
-                    printf("retval == 0");
-                  }
-                  else{
-                    //connection exists data to read
-                  }
+                printf("retval > 0\n");
+                //connection exists data to read
               }
-            } //FD_ISSET
-          }//forloopfd
-        }//for()
-        printf("Before close()\n");
-        close(sockfd);
-        SSL_CTX_free(ssl_ctx);
-      }
+          }
+        } //FD_ISSET
+      }//forloopfd
+    }//for()
+    printf("Before close()\n");
+    close(sockfd);
+    SSL_CTX_free(ssl_ctx);
+  }
