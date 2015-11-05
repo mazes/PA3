@@ -142,6 +142,53 @@ void serveData(SSL* ssl){
  	close(fd);
 }
 
+void writeToFile(struct sockaddr_in client , char *connection){
+    
+    char *port = "18422";
+    char *ip = "127.0.0.1";
+    
+    FILE* fd;
+    fd = fopen("lumber.log", "r");
+    
+    if(fd == NULL){
+        fd = fopen("chat.log", "w+");
+        if(fd == NULL){
+            printf("error opening file");
+        }
+    }
+    
+    char date[23];
+    time_t t;
+    struct tm *tmpt;
+    
+    t = time(NULL);
+    tmpt = localtime(&t);
+    
+    if (tmpt == NULL) {
+        perror("getting localtime failed");
+    }
+
+    strftime(date,21, "%Y-%m-%d %H:%M:%S", tmpt);
+	
+	char * clientIP;
+	struct sockaddr_in* ip4Add = (struct sockaddr_in*)&client;
+	int ipAddr = ip4Add->sin_addr.s_addr;
+	inet_ntop( AF_INET, &ipAddr, clientIP, INET_ADDRSTRLEN);
+	int portnum = (int) ntohs(client.sin_port);
+	char *portNr;
+	sprintf(portNr, "%d", portnum);
+    
+    if(fputs(date, fd) < 0)printf("error writing to file");
+    fputs(" : ", fd);
+    fputs(clientIP, fd);
+    fputs(":", fd);
+    fputs(portNr, fd);
+    fputs(" ", fd);
+    fputs(connection, fd);
+    fputs("\r\n", fd);
+    fclose(fd);
+}
+
 int main(int argc, char **argv)
 {
     int sockfd, err;
