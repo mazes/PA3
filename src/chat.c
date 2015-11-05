@@ -135,8 +135,9 @@ static char *prompt;
    handle the user requests in this function. The client handles the
    server messages in the loop in main(). */
 void readline_callback(char *line)
-{				printf("readline_callback()\n");
+{		printf("readline_callback()\n");
         char buffer[256];
+		
         if (NULL == line) {
                 rl_callback_handler_remove();
                 active = 0;
@@ -182,6 +183,7 @@ void readline_callback(char *line)
                 /* Maybe update the prompt. */
                 free(prompt);
                 prompt = strdup(chatroom); /* What should the new prompt look like? */
+				free(chatroom);
 		rl_set_prompt(prompt);
                 return;
         }
@@ -345,11 +347,11 @@ int main(int argc, char **argv){
 				message[err] = '\0';
 				printf("%s\n", message);
 				printf("Before prompt\n");
-        prompt = strdup("> ");
-        rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
 				fd_set server;
 				FD_ZERO(&server);
-				FD_SET(server_fd);
+				FD_SET(server_fd, &server);
+        prompt = strdup("> ");
+        rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
 				while (active) {
     					 fd_set rfds;
 							 struct timeval timeout;
@@ -360,9 +362,9 @@ int main(int argc, char **argv){
 								timeout.tv_usec = 0;
 
                 int r = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &timeout);
-								printf("select returns:%d\n", r);
+				//				printf("select returns:%d\n", r);
                 if (r < 0) {
-												printf("select < 0\n");
+						printf("select < 0\n");
                         if (errno == EINTR) {
                                 /* This should either retry the call or
                                    exit the loop, depending on whether we
@@ -380,17 +382,20 @@ int main(int argc, char **argv){
                            to reprint the current input line. */
 												rl_redisplay();
                         continue;
-                }else{
-
-								}
+                }
+				
                 if (FD_ISSET(STDIN_FILENO, &rfds)) {
                         rl_callback_read_char();
                 }
+				else{			
+								char *message = "hallo";
+								SSL_write(server_ssl, "hallo", strlen(message));
 								/* Handle messages from the server here! */
-								int retval = select(server_fd+1,&master,NULL,NULL,&timeout);
-								if (retval < 0)[
+								int retval = select(server_fd+1,&server, NULL, NULL,&timeout);
+								if (retval < 0){
 									perror("serverselect < 0");
-								]
+								}
+								
 								if(r == 0){
 									printf("nothing to read from serverselect\n");
 								}
@@ -402,7 +407,7 @@ int main(int argc, char **argv){
 									message[err] = '\0';
 									printf("%s\n", message);
 								}
-
+				}
         }
 				SSL_free(server_ssl);
 				close(server_fd);
