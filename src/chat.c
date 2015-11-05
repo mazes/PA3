@@ -343,10 +343,13 @@ int main(int argc, char **argv){
 				err = SSL_read(server_ssl, message, sizeof(message));
 				CHK_SSL(err);
 				message[err] = '\0';
-				printf("message from server: %s\n", message);
+				printf("%s\n", message);
 				printf("Before prompt\n");
         prompt = strdup("> ");
         rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
+				fd_set server;
+				FD_ZERO(&server);
+				FD_SET(server_fd);
 				while (active) {
     					 fd_set rfds;
 							 struct timeval timeout;
@@ -359,7 +362,7 @@ int main(int argc, char **argv){
                 int r = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &timeout);
 								printf("select returns:%d\n", r);
                 if (r < 0) {
-						printf("select < 0\n");
+												printf("select < 0\n");
                         if (errno == EINTR) {
                                 /* This should either retry the call or
                                    exit the loop, depending on whether we
@@ -384,6 +387,21 @@ int main(int argc, char **argv){
                         rl_callback_read_char();
                 }
 								/* Handle messages from the server here! */
+								int retval = select(server_fd+1,&master,NULL,NULL,&timeout);
+								if (retval < 0)[
+									perror("serverselect < 0");
+								]
+								if(r == 0){
+									printf("nothing to read from serverselect\n");
+								}
+								else{
+									printf("something on serverfd\n");
+									memset(&message, 0, sizeof(message));
+									err = SSL_read(server_ssl, message, sizeof(message));
+									CHK_SSL(err);
+									message[err] = '\0';
+									printf("%s\n", message);
+								}
 
         }
 				SSL_free(server_ssl);
