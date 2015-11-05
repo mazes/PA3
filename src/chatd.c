@@ -210,6 +210,7 @@ int main(int argc, char **argv)
             err = SSL_write(server_ssl, reply, strlen(reply));
             CHK_SSL(err);
             FD_CLR(sockfd, &rfds);
+			FD_SET(connfd, &rfds);
           }
           else{
               if (retval == -1) {

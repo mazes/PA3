@@ -387,9 +387,8 @@ int main(int argc, char **argv){
                 if (FD_ISSET(STDIN_FILENO, &rfds)) {
                         rl_callback_read_char();
                 }
-				else{			
-								char *message = "hallo";
-								SSL_write(server_ssl, "hallo", strlen(message));
+				else{		
+							
 								/* Handle messages from the server here! */
 								int retval = select(server_fd+1,&server, NULL, NULL,&timeout);
 								if (retval < 0){
@@ -408,6 +407,10 @@ int main(int argc, char **argv){
 									printf("%s\n", message);
 								}
 				}
+					
+								printf("SSL_write: hallo");	
+								char *message = "hallo";
+									SSL_write(server_ssl, "hallo", strlen(message));
         }
 				SSL_free(server_ssl);
 				close(server_fd);
