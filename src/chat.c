@@ -300,6 +300,9 @@ int getSocket(int port){
 int main(int argc, char **argv){
 	char message[512];
 	int err;
+	fd_set master;
+	fd_set rfds;
+	struct timeval timeout;
 	/* Initialize OpenSSL */
 	SSL_library_init();
 	OpenSSL_add_all_algorithms();
@@ -340,32 +343,33 @@ int main(int argc, char **argv){
 					exit(-1);
 				}
 				printf("Before SSL_read()\n");
-        /* Read characters from the keyboard while waiting for input.
-         */
+
+				/*recieve Welcoming message */
 				memset(&message, 0, sizeof(message));
 				err = SSL_read(server_ssl, message, sizeof(message));
 				CHK_SSL(err);
 				message[err] = '\0';
 				printf("%s\n", message);
-				printf("Before prompt\n");
-				fd_set server;
-				FD_ZERO(&server);
+
+				/*Zero and set FD's*/
+				FD_ZERO(&master);
+				FD_SET(STDIN_FILENO, &master);
+				FD_SET(server_fd, &master);
+
+				/* Read characters from the keyboard while waiting for input.
+				 */
         prompt = strdup("> ");
         rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
 				while (active) {
-    					 fd_set rfds;
-							 struct timeval timeout;
-
                 FD_ZERO(&rfds);
-                FD_SET(STDIN_FILENO, &rfds);
-											FD_SET(server_fd, &rfds);
+								memcpy(&rfds, &master, sizeof(rfds));
 								timeout.tv_sec = 5;
 								timeout.tv_usec = 0;
 
-                int r = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &timeout);
+                int r = select(FD_SETSIZE, &rfds, NULL, NULL, &timeout);
 				//				printf("select returns:%d\n", r);
                 if (r < 0) {
-						printf("select < 0\n");
+										printf("select < 0\n");
                         if (errno == EINTR) {
                                 /* This should either retry the call or
                                    exit the loop, depending on whether we
@@ -388,8 +392,7 @@ int main(int argc, char **argv){
                 if (FD_ISSET(STDIN_FILENO, &rfds)) {
                         rl_callback_read_char();
                 }
-				else{
-							if(FD_ISSET(server_fd, &rfds)){
+								if(FD_ISSET(server_fd, &rfds)){
 										char *message = "hallo";
 										SSL_write(server_ssl, "hallo", strlen(message));
 										/* Handle messages from the server here! */
@@ -409,7 +412,6 @@ int main(int argc, char **argv){
 											printf("%s\n", message);
 										}
 								}
-					}
         }
 				SSL_free(server_ssl);
 				close(server_fd);
