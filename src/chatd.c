@@ -22,13 +22,22 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+/*Error checks for the SSL*/
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
+
+typedef struct Users{
+  char clientIP[17];
+  char portNr[6];
+  char *username;
+  int socket;
+}Users;
+
+
 /* This can be used to build instances of GTree that index on
    the address of a connection. */
-int sockaddr_in_cmp(const void *addr1, const void *addr2)
-{
+int sockaddr_in_cmp(const void *addr1, const void *addr2){
         const struct sockaddr_in *_addr1 = addr1;
         const struct sockaddr_in *_addr2 = addr2;
 
@@ -49,6 +58,7 @@ int sockaddr_in_cmp(const void *addr1, const void *addr2)
         return 0;
 }
 
+/*Load the certificates for all the users*/
 void LoadServerCertificates(SSL_CTX* ssl_ctx, char* cert, char* key){
   if(!SSL_CTX_use_certificate_file(ssl_ctx, cert, SSL_FILETYPE_PEM)){
      perror("SSL_CTX_use_certificate_file()");
@@ -64,24 +74,18 @@ void LoadServerCertificates(SSL_CTX* ssl_ctx, char* cert, char* key){
   }
 }
 
+/*Create a socket to listen for client connections*/
 int getSocket(int port){
   int sockfd;
   struct sockaddr_in server;
-  /* Create and bind a TCP socket */
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   memset(&server, 0, sizeof(server));
   server.sin_family = AF_INET;
-  /* Network functions need arguments in network byte order instead of
-     host byte order. The macros htonl, htons convert the values, */
   server.sin_addr.s_addr = htonl(INADDR_ANY);
   server.sin_port = htons(port);
   if(bind(sockfd, (struct sockaddr *) &server, (socklen_t) sizeof(server)) == -1){
     perror("bind():");
   }
-
-  /* Before we can accept messages, we have to listen to the port. We allow one
-   * 1 connection to queue for simplicity.
-   */
   printf("listening...\n");
   if(listen(sockfd, 5) != 0){
     perror("listen()");
@@ -89,27 +93,6 @@ int getSocket(int port){
 
 	return sockfd;
 }
-
-void ShowCerts(SSL* ssl)
-{   X509 *cert;
-    char *line;
-
-    cert = SSL_get_peer_certificate(ssl);	/* Get certificates (if available) */
-    if ( cert != NULL )
-    {
-        printf("Server certificates:\n");
-        line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-        printf("Subject: %s\n", line);
-        free(line);
-        line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-        printf("Issuer: %s\n", line);
-        free(line);
-        X509_free(cert);
-    }
-    else
-        printf("No certificates.\n");
-}
-
 
 void serveData(SSL* ssl){
   char message[512];
@@ -126,7 +109,7 @@ void serveData(SSL* ssl){
       printf("Client msg: %s\n", message);
   }
   else{
-		printf("read is <=0\n");
+		printf("read is <= 0\n");
       CHK_SSL(read);
   }
 	err = sprintf(reply, "%s" ,greeting);
@@ -142,30 +125,30 @@ void serveData(SSL* ssl){
  	close(fd);
 }
 
+/*Write to the logged in and out users*/
 void writeToFile(struct sockaddr_in client , char *connection){
+  FILE* fd;
+  fd = fopen("chat.log", "a");
 
-    FILE* fd;
-    fd = fopen("chat.log", "a");
+  if(fd == NULL){
+      fd = fopen("chat.log", "w+");
+      if(fd == NULL){
+          printf("error opening file");
+      }
+  }
 
-    if(fd == NULL){
-        fd = fopen("chat.log", "w+");
-        if(fd == NULL){
-            printf("error opening file");
-        }
-    }
+  char date[21];
+  time_t t;
+  struct tm *tmpt;
 
-    char date[21];
-    time_t t;
-    struct tm *tmpt;
+  t = time(NULL);
+  tmpt = localtime(&t);
 
-    t = time(NULL);
-    tmpt = localtime(&t);
+  if (tmpt == NULL) {
+      perror("getting localtime failed");
+  }
 
-    if (tmpt == NULL) {
-        perror("getting localtime failed");
-    }
-
-    strftime(date,21, "%Y-%m-%d %H:%M:%S", tmpt);
+  strftime(date,21, "%Y-%m-%d %H:%M:%S", tmpt);
 
 	char clientIP[17] ;
 	memset(&clientIP, 0, sizeof(clientIP));
@@ -176,27 +159,40 @@ void writeToFile(struct sockaddr_in client , char *connection){
 	char portNr[8];
 	sprintf(portNr, "%d", portnum);
 
-    if(fputs(date, fd) < 0)printf("error writing to file");
-    fputs(" : ", fd);
-    fputs(clientIP, fd);
-    fputs(":", fd);
-    fputs(portNr, fd);
-    fputs(" ", fd);
-    fputs(connection, fd);
-    fputs("\r\n", fd);
-    fclose(fd);
+  if(fputs(date, fd) < 0)printf("error writing to file");
+  fputs(" : ", fd);
+  fputs(clientIP, fd);
+  fputs(":", fd);
+  fputs(portNr, fd);
+  fputs(" ", fd);
+  fputs(connection, fd);
+  fputs("\r\n", fd);
+  fclose(fd);
 }
 
-int main(int argc, char **argv)
-{
+/*Print out logged in users*/
+void addUsers(int fd, struct sockaddr_in client, Users users){
+  memset(&users.clientIP, 0, sizeof(users.clientIP));
+  struct sockaddr_in* ip4Add = (struct sockaddr_in*)&client;
+  int ipAddr = ip4Add->sin_addr.s_addr;
+  inet_ntop( AF_INET, &ipAddr, users.clientIP, INET_ADDRSTRLEN);
+  int portnum = (int) ntohs(client.sin_port);
+  sprintf(users.portNr, "%d", portnum);
+  users.username = NULL;
+}
+
+int main(int argc, char **argv){
     int sockfd, err;
-    int accSocket;
     int maxFD;
     int connfd;
-    struct sockaddr_in client;
+    fd_set rfds, master;
+    struct timeval tv;
+    int retval;
     char message[512];
     char reply[124];
-  SSL *server_ssl;
+    SSL *server_ssl;
+    Users user[1000];
+    struct sockaddr_in clientArr[1000];
     if(argc < 2){
       perror("only use port as argument");
       exit(-1);
@@ -207,56 +203,51 @@ int main(int argc, char **argv)
     OpenSSL_add_all_algorithms();
     SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_server_method());
     LoadServerCertificates(ssl_ctx, "../data/server.crt", "../data/server.key");
-
+    /*get socket*/
     sockfd = getSocket(atoi(argv[1]));
+    /*create new ssl context*/
     server_ssl = SSL_new(ssl_ctx);
     SSL_set_fd(server_ssl, sockfd);
 
-    fd_set rfds, master;
-    struct timeval tv;
-    int retval;
+
     maxFD = sockfd;
     FD_ZERO(&master);
     FD_ZERO(&rfds);
     FD_SET(sockfd, &master);
-    for (;;) {
+    while(1) {
       FD_ZERO(&rfds);
       memcpy(&rfds, &master, sizeof(rfds));
-      /* Check whether there is data on the socket fd. */
-      /* Wait for five seconds. */
       tv.tv_sec = 5;
       tv.tv_usec = 0;
-      printf("calling select()\n");
+
       retval = select(maxFD + 1, &rfds, NULL, NULL, &tv);
       if(retval < 0){
         perror("select()");
       }
       for(int i = 0; i <= maxFD; i++){
-        printf("i=%d\n", i);
         if(FD_ISSET(i, &rfds)){
-          printf("FD IS SET\n");
           if(i == sockfd){
-            printf("i == sockfd\n");
-            //new Connection
-            /* Data is available, receive it. */
-            assert(FD_ISSET(sockfd, &rfds));
-            /* Copy to len, since recvfrom may change it. */
+            struct sockaddr_in client;
+            /* Now we have new Connection*/
+            /* accept connection from new user */
             socklen_t len = (socklen_t) sizeof(client);
-            /* For TCP connectios, we first have to accept. */
             connfd = accept(sockfd, (struct sockaddr *) &client,
                             &len);
             /*set the socket in fd and ssl*/
             FD_SET(connfd, &master);
             SSL_set_fd(server_ssl, connfd);
-            /*increase sockets to check*/
+            clientArr[connfd] = client;
+            /*increase sockets if needed*/
             if(maxFD < connfd){
-              printf("maxFD = connfd\n");
-              maxFD = connfd;
+                printf("maxFD = connfd\n");
+                maxFD = connfd;
             }
             printf ("Connection from %s, port %d\n",
               inet_ntoa(client.sin_addr), ntohs(client.sin_port));
             /*write connection to .log*/
-				    writeToFile(client, "connected");
+				    writeToFile(clientArr[connfd], "connected");
+
+            addUsers(connfd, client, users[connfd]);
             /*accept the ssl connection*/
             if(SSL_accept(server_ssl) < 0){
                 perror("SSL_accept()");
@@ -270,21 +261,22 @@ int main(int argc, char **argv)
                 if(retval == 0){
                   printf("retval == 0\n");
                 }
-                printf("retval > 0\n");
                 //connection exists data to read
                 memset(&message, 0, sizeof(message));
                 err = SSL_read(server_ssl, message, sizeof(message));
                 CHK_SSL(err);
                 if(err == 0){
+                  /*client has disconnected*/
                   int sock = SSL_get_fd(server_ssl);
-                  SSL_free(server_ssl);
+                  /*get sockaddr from socket!!*/
                   close(sock);
-				  FD_CLR(i, &master);
+				          FD_CLR(i, &master);
+                  writeToFile(clientArr[i], "disconnected");
                 }else{
-                message[err] = '\0';
-                printf("%s\n", message);
-                SSL_write(server_ssl, message, strlen(message));
-				}
+                    message[err] = '\0';
+                    printf("%s\n", message);
+                    SSL_write(server_ssl, message, strlen(message));
+				        }
           }
         } //FD_ISSET
       }//forloopfd
