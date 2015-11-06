@@ -273,6 +273,11 @@ int main(int argc, char **argv)
               else{
                 printf("retval > 0\n");
                 //connection exists data to read
+                memset(&message, 0, sizeof(message));
+                err = SSL_read(server_ssl, message, sizeof(message));
+                CHK_SSL(err);
+                message[err] = '\0';
+                printf("%s\n", message);
               }
           }
         } //FD_ISSET
