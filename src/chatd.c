@@ -152,7 +152,7 @@ void addUsers(int fd, struct sockaddr_in client, Users users){
 
 void printUsers(Users users[]){
   for(int i = 0; i < 1000; i++){
-    if(memcmp(' ', users[i].clientIP, 1 != 0)){
+    if(strcmp("X", users[i].clientIP, 1 != 0)){
       printf("clientIP: %s\n", users[i].clientIP);
     }
   }
@@ -166,7 +166,7 @@ void checkMessage(SSL *ssl, char *message, Users users[]){
 
 void setUsersNull(Users users[]){
   for(int i = 0; i < 1000; i++){
-    users[i].clientIP[0] = ' ';
+    users[i].clientIP[0] = 'X';
   }
 }
 int main(int argc, char **argv){
