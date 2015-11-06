@@ -275,6 +275,11 @@ int main(int argc, char **argv)
                 memset(&message, 0, sizeof(message));
                 err = SSL_read(server_ssl, message, sizeof(message));
                 CHK_SSL(err);
+                if(err == 0){
+                  int sock = SSL_get_fd(server_ssl);
+                  SSL_free(server_ssl);
+                  close(sock);
+                }
                 message[err] = '\0';
                 printf("%s\n", message);
                 SSL_write(server_ssl, message, strlen(message));
