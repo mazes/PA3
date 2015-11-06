@@ -93,8 +93,7 @@ void getpasswd(const char *prompt, char *passwd, size_t size)
    active to 0 to get out of the loop below. Also note that the select
    call below may return with -1 and errno set to EINTR. Do not exit
    select with this error. */
-void
-sigint_handler(int signum)
+void sigint_handler(int signum)
 {
         active = 0;
 
@@ -150,6 +149,9 @@ void readline_callback(char *line)
             (strncmp("/quit", line, 5) == 0)) {
                 rl_callback_handler_remove();
                 active = 0;
+								/*send the server 0 bytes to let know
+								we have left*/
+								SSL_write(server_ssl, "", 0);
                 return;
         }
         if (strncmp("/game", line, 5) == 0) {
@@ -256,27 +258,7 @@ void readline_callback(char *line)
         fsync(STDOUT_FILENO);
 }
 
-void ShowCerts(SSL* ssl){
-	  X509 *cert;
-    char *line;
-
-    cert = SSL_get_peer_certificate(ssl); /* get the server's certificate */
-    if ( cert != NULL )
-    {
-        printf("Server certificates:\n");
-        line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-        printf("Subject: %s\n", line);
-        free(line);       /* free the malloc'ed string */
-        line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-        printf("Issuer: %s\n", line);
-        free(line);       /* free the malloc'ed string */
-        X509_free(cert);     /* free the malloc'ed certificate copy */
-    }
-    else{
-        printf("No certificates.\n");
-		}
-}
-
+/*Returns the socket to connect with server*/
 int getSocket(int port){
 	int fd;
 	struct sockaddr_in server;
@@ -309,115 +291,91 @@ int main(int argc, char **argv){
 	SSL_load_error_strings();
 	SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_client_method());
 
-	/* TODO:
-	 * We may want to use a certificate file if we self sign the
-	 * certificates using SSL_use_certificate_file(). If available,
-	 * a private key can be loaded using
-	 * SSL_CTX_use_PrivateKey_file(). The use of private keys with
-	 * a server side key data base can be used to authenticate the
-	 * client.
-	 */
-
-
-	/* Create and set up a listening socket. The sockets you
-	 * create here can be used in select calls, so do not forget
-	 * them.
-	 */
-
+	/*setup socket to listen to clients*/
 	server_fd = getSocket(atoi(argv[2]));
 
 	/* Use the socket for the SSL connection. */
 	server_ssl = SSL_new(ssl_ctx);
 	SSL_set_fd(server_ssl, server_fd);
 
-	/* Now we can create BIOs and use them instead of the socket.
-	 * The BIO is responsible for maintaining the state of the
-	 * encrypted connection and the actual encryption. Reads and
-	 * writes to sock_fd will insert unencrypted data into the
-	 * stream, which even may crash the server.
+	printf("Before SSL_connect()\n");
+  /* Set up secure connection to the chatd server. */
+	if(SSL_connect(server_ssl) == -1){
+		perror("SSL_connect()");
+		exit(-1);
+	}
+	printf("Before SSL_read()\n");
+
+	/*recieve Welcoming message */
+	memset(&message, 0, sizeof(message));
+	err = SSL_read(server_ssl, message, sizeof(message));
+	CHK_SSL(err);
+	message[err] = '\0';
+	printf("%s\n", message);
+
+	/*Zero and set FD's*/
+	FD_ZERO(&master);
+	FD_SET(STDIN_FILENO, &master);
+	FD_SET(server_fd, &master);
+
+	/* Read characters from the keyboard while waiting for input.
 	 */
-	 			printf("Before SSL_connect()\n");
-        /* Set up secure connection to the chatd server. */
-				if(SSL_connect(server_ssl) == -1){
-					perror("SSL_connect()");
-					exit(-1);
-				}
-				printf("Before SSL_read()\n");
+  prompt = strdup("> ");
+  rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
+	while (active) {
+          FD_ZERO(&rfds);
+					memcpy(&rfds, &master, sizeof(rfds));
+					timeout.tv_sec = 5;
+					timeout.tv_usec = 0;
 
-				/*recieve Welcoming message */
-				memset(&message, 0, sizeof(message));
-				err = SSL_read(server_ssl, message, sizeof(message));
-				CHK_SSL(err);
-				message[err] = '\0';
-				printf("%s\n", message);
+          int r = select(FD_SETSIZE, &rfds, NULL, NULL, &timeout);
+          if (r < 0) {
+                  if (errno == EINTR) {
+                          /* This should either retry the call or
+                             exit the loop, depending on whether we
+                             received a SIGTERM. */
+                          continue;
+                  }
+                  /* Not interrupted, maybe nothing we can do? */
+                  break;
+          }
+          if (r == 0) {
+                  write(STDOUT_FILENO, "No message?\n", 12);
+                  fsync(STDOUT_FILENO);
+                  /* Whenever you print out a message, call this
+                     to reprint the current input line. */
+									rl_callback_read_char();
+                  continue;
+          }
 
-				/*Zero and set FD's*/
-				FD_ZERO(&master);
-				FD_SET(STDIN_FILENO, &master);
-				FD_SET(server_fd, &master);
+          if (FD_ISSET(STDIN_FILENO, &rfds)) {
+                  rl_callback_read_char();
+          }
+					if(FD_ISSET(server_fd, &rfds)){
+							/* Handle messages from the server here! */
+							if (r < 0){
+								perror("serverselect < 0");
+							}
 
-				/* Read characters from the keyboard while waiting for input.
-				 */
-        prompt = strdup("> ");
-        rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
-				while (active) {
-                FD_ZERO(&rfds);
-								memcpy(&rfds, &master, sizeof(rfds));
-								timeout.tv_sec = 5;
-								timeout.tv_usec = 0;
-
-                int r = select(FD_SETSIZE, &rfds, NULL, NULL, &timeout);
-				//				printf("select returns:%d\n", r);
-                if (r < 0) {
-										printf("select < 0\n");
-                        if (errno == EINTR) {
-                                /* This should either retry the call or
-                                   exit the loop, depending on whether we
-                                   received a SIGTERM. */
-                                continue;
-                        }
-                        /* Not interrupted, maybe nothing we can do? */
-                        perror("select()");
-                        break;
-                }
-                if (r == 0) {
-                        write(STDOUT_FILENO, "No message?\n", 12);
-                        fsync(STDOUT_FILENO);
-                        /* Whenever you print out a message, call this
-                           to reprint the current input line. */
-												rl_redisplay();
-                        continue;
-                }
-
-                if (FD_ISSET(STDIN_FILENO, &rfds)) {
-                        rl_callback_read_char();
-                }
-								if(FD_ISSET(server_fd, &rfds)){
-										/* Handle messages from the server here! */
-										if (r < 0){
-											perror("serverselect < 0");
-										}
-
-										else if(r == 0){
-											printf("nothing to read from serverselect\n");
-										}
-										else{
-											printf("something on serverfd\n");
-											memset(&message, 0, sizeof(message));
-											err = SSL_read(server_ssl, message, sizeof(message));
-											if(err == 0){
-												FD_CLR(server_fd, &master);
-												SSL_free(server_ssl);
-												close(server_fd);
-												printf("Server crashed!\n");
-											}
-											CHK_SSL(err);
-											message[err] = '\0';
-											printf("%s\n", message);
-										}
+							else if(r == 0){
+								printf("nothing to read from serverselect\n");
+							}
+							else{
+								memset(&message, 0, sizeof(message));
+								err = SSL_read(server_ssl, message, sizeof(message));
+								if(err == 0){
+									FD_CLR(server_fd, &master);
+									SSL_free(server_ssl);
+									close(server_fd);
+									printf("Server crashed!\n");
 								}
-        }
-				SSL_free(server_ssl);
-				close(server_fd);
-				SSL_CTX_free(ssl_ctx);
+								CHK_SSL(err);
+								message[err] = '\0';
+								printf("%s\n", message);
+							}
+					}
+  }
+	SSL_free(server_ssl);
+	close(server_fd);
+	SSL_CTX_free(ssl_ctx);
 }
