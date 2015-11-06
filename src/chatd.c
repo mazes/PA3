@@ -182,8 +182,9 @@ void addUsers(int fd, struct sockaddr_in client, Users users){
 }
 
 void printUsers(Users users[]){
+  memset(&users, 0, sizeof(users));
   for(int i = 0; i < 1000; i++){
-    if(strncmp(" ", users[i].clientIP, 1 != 0)){
+    if(strncmp("\0", users[i].clientIP, 1 != 0)){
       printf("clientIP: %s\n", users[i].clientIP);
     }
   }
