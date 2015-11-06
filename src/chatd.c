@@ -27,6 +27,14 @@
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
+typedef struct Users{
+  char clientIP[17];
+  char portNr[6];
+  char *username;
+  int socket;
+}Users;
+
+
 /* This can be used to build instances of GTree that index on
    the address of a connection. */
 int sockaddr_in_cmp(const void *addr1, const void *addr2){
@@ -165,23 +173,14 @@ void writeToFile(struct sockaddr_in client , char *connection){
 /*Print out logged in users*/
 void addUsers(int fd, struct sockaddr_in client, Users users){
 
-  memset(&client.clientIP, 0, sizeof(client.clientIP));
+  memset(&users.clientIP, 0, sizeof(users.clientIP));
   struct sockaddr_in* ip4Add = (struct sockaddr_in*)&client;
   int ipAddr = ip4Add->sin_addr.s_addr;
-  inet_ntop( AF_INET, &ipAddr, clientIP, INET_ADDRSTRLEN);
+  inet_ntop( AF_INET, &ipAddr, users.clientIP, INET_ADDRSTRLEN);
   int portnum = (int) ntohs(client.sin_port);
-  char portNr[8];
-  sprintf(client.portNr, "%d", portnum);
-  username = NULL;
+  sprintf(users.portNr, "%d", portnum);
+  users.username = NULL;
 }
-
-typedef struct Users{
-  char clientIP[17];
-  char portNr[6];
-  char *username;
-  int socket;
-}Users;
-
 int main(int argc, char **argv){
     int sockfd, err;
     int maxFD;
