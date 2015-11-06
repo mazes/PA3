@@ -94,37 +94,6 @@ int getSocket(int port){
 	return sockfd;
 }
 
-void serveData(SSL* ssl){
-  char message[512];
-  char reply[512];
-  int read, fd, err;
-  const char* greeting = "Welcome!";
-
-  err = SSL_accept(ssl);
-  CHK_SSL(err);
-
-  read = SSL_read(ssl, message, sizeof(message));
-  if(read > 0){
-      message[read] = 0;
-      printf("Client msg: %s\n", message);
-  }
-  else{
-		printf("read is <= 0\n");
-      CHK_SSL(read);
-  }
-	err = sprintf(reply, "%s" ,greeting);
-    if(err < 0){
-        printf("sprintf returns negative\n");
-    }
-
-    err = SSL_write(ssl, reply, strlen(reply));
-	CHK_SSL(err);
-	printf("wrote with SSL_write()%s\n", reply);
-  	fd = SSL_get_fd(ssl);
- 	SSL_free(ssl);
- 	close(fd);
-}
-
 /*Write to the logged in and out users*/
 void writeToFile(struct sockaddr_in client , char *connection){
   FILE* fd;
@@ -183,7 +152,7 @@ void addUsers(int fd, struct sockaddr_in client, Users users){
 
 void printUsers(Users users[]){
   for(int i = 0; i < 1000; i++){
-    if(strncmp(" ", users[i].clientIP, 1 != 0)){
+    if(memcmp(' ', users[i].clientIP, 1 != 0)){
       printf("clientIP: %s\n", users[i].clientIP);
     }
   }
