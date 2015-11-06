@@ -242,6 +242,10 @@ int main(int argc, char **argv)
             /* For TCP connectios, we first have to accept. */
             connfd = accept(sockfd, (struct sockaddr *) &client,
                             &len);
+            if(maxFD < connfd){
+              printf("maxFD = connfd\n");
+              maxFD = connfd;
+            }
             printf ("Connection from %s, port %d\n",
               inet_ntoa(client.sin_addr), ntohs(client.sin_port));
 				writeToFile(client, "connected");
@@ -256,7 +260,7 @@ int main(int argc, char **argv)
             err = SSL_write(server_ssl, reply, strlen(reply));
             CHK_SSL(err);
             FD_CLR(sockfd, &rfds);
-			FD_SET(connfd, &rfds);
+			      FD_SET(connfd, &rfds);
           }
           else{
               if (retval == -1) {

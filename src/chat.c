@@ -137,7 +137,7 @@ static char *prompt;
 void readline_callback(char *line)
 {		printf("readline_callback()\n");
         char buffer[256];
-		
+
         if (NULL == line) {
                 rl_callback_handler_remove();
                 active = 0;
@@ -253,7 +253,6 @@ void readline_callback(char *line)
         snprintf(buffer, 255, "Message: %s\n", line);
         write(STDOUT_FILENO, buffer, strlen(buffer));
         fsync(STDOUT_FILENO);
-		SSL_write(server_ssl, buffer, strlen(buffer));
 }
 
 void ShowCerts(SSL* ssl){
@@ -384,18 +383,19 @@ int main(int argc, char **argv){
 												rl_redisplay();
                         continue;
                 }
-				
+
                 if (FD_ISSET(STDIN_FILENO, &rfds)) {
                         rl_callback_read_char();
                 }
-				else{		
-							
+				else{
+								char *message = "hallo";
+								SSL_write(server_ssl, "hallo", strlen(message));
 								/* Handle messages from the server here! */
 								int retval = select(server_fd+1,&server, NULL, NULL,&timeout);
 								if (retval < 0){
 									perror("serverselect < 0");
 								}
-								
+
 								if(r == 0){
 									printf("nothing to read from serverselect\n");
 								}
@@ -405,7 +405,7 @@ int main(int argc, char **argv){
 									err = SSL_read(server_ssl, message, sizeof(message));
 									CHK_SSL(err);
 									message[err] = '\0';
-									printf("message from server: %s\n", message);
+									printf("%s\n", message);
 								}
 				}
         }
