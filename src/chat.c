@@ -405,6 +405,12 @@ int main(int argc, char **argv){
 											printf("something on serverfd\n");
 											memset(&message, 0, sizeof(message));
 											err = SSL_read(server_ssl, message, sizeof(message));
+											if(err == 0){
+												FD_CLR(server_fd, &master);
+												SSL_free(server_ssl);
+												close(server_fd);
+												printf("Server crashed!\n");
+											}
 											CHK_SSL(err);
 											message[err] = '\0';
 											printf("%s\n", message);
