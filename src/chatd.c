@@ -267,6 +267,9 @@ int main(int argc, char **argv)
             CHK_SSL(err);
           }
           else{
+                if(retval == 0){
+                  printf("retval == 0\n");
+                }
                 printf("retval > 0\n");
                 //connection exists data to read
                 memset(&message, 0, sizeof(message));
