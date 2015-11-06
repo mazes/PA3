@@ -197,7 +197,7 @@ void checkMessage(SSL *ssl, char *message, Users users[]){
 
 void setUsersNull(Users users[]){
   for(int i = 0; i < 1000; i++){
-    users[i].clientIP = " ";
+    users[i].clientIP[0] = ' ';
   }
 }
 int main(int argc, char **argv){
