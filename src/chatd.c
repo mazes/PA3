@@ -163,9 +163,24 @@ void writeToFile(struct sockaddr_in client , char *connection){
 }
 
 /*Print out logged in users*/
-void func(gpointer key, gpointer value, gpointer data){
-      printf("%s\n", key);
+void addUsers(int fd, struct sockaddr_in client, Users users){
+
+  memset(&client.clientIP, 0, sizeof(client.clientIP));
+  struct sockaddr_in* ip4Add = (struct sockaddr_in*)&client;
+  int ipAddr = ip4Add->sin_addr.s_addr;
+  inet_ntop( AF_INET, &ipAddr, clientIP, INET_ADDRSTRLEN);
+  int portnum = (int) ntohs(client.sin_port);
+  char portNr[8];
+  sprintf(client.portNr, "%d", portnum);
+  username = NULL;
 }
+
+typedef struct Users{
+  char clientIP[17];
+  char portNr[6];
+  char *username;
+  int socket;
+}Users;
 
 int main(int argc, char **argv){
     int sockfd, err;
@@ -174,6 +189,7 @@ int main(int argc, char **argv){
     fd_set rfds, master;
     struct timeval tv;
     int retval;
+    char chatrooms[100][30];
     char message[512];
     char reply[124];
     SSL *server_ssl;
