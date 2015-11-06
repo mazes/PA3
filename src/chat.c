@@ -249,6 +249,8 @@ void readline_callback(char *line)
         }
         if (strncmp("/who", line, 4) == 0) {
                 /* Query all available users */
+								snprintf(buffer, "%s", line);
+								SSL_write(server_ssl, buffer, strlen(buffer));
                 return;
         }
         /* Sent the buffer to the server. */
