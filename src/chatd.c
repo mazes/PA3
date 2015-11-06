@@ -181,6 +181,20 @@ void addUsers(int fd, struct sockaddr_in client, Users users){
   users.username = NULL;
 }
 
+void printUsers(User []users){
+  for(int i = 0; i < 1000; i++){
+    if(strncmp(" ", users[i].clentIP, 1 != 0)){
+      printf("clientIP: %s\n", users[i].clientIP);
+    }
+  }
+}
+
+void checkMessage(SSL *ssl, char *message, User []users){
+    if(strncmp("/who", message 4) == 0){
+      printUsers(users);
+    }
+}
+
 int main(int argc, char **argv){
     int sockfd, err;
     int maxFD;
@@ -265,6 +279,7 @@ int main(int argc, char **argv){
                 memset(&message, 0, sizeof(message));
                 err = SSL_read(server_ssl, message, sizeof(message));
                 CHK_SSL(err);
+                checkMessage(server_ssl, message, users);
                 if(err == 0){
                   /*client has disconnected*/
                   int sock = SSL_get_fd(server_ssl);
