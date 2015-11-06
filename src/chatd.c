@@ -220,6 +220,7 @@ int main(int argc, char **argv){
 				          FD_CLR(i, &master);
                   writeToFile(clientArr[i], "disconnected");
                 }else{
+                    /*Echoing back message*/
                     message[err] = '\0';
                     printf("%s\n", message);
                     SSL_write(server_ssl, message, strlen(message));
