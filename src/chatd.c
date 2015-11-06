@@ -219,15 +219,17 @@ int main(int argc, char **argv)
     FD_ZERO(&master);
     FD_ZERO(&rfds);
     FD_SET(sockfd, &master);
-    memcpy(&rfds, &master, sizeof(rfds));
     for (;;) {
-
+      memcpy(&rfds, &master, sizeof(rfds));
       /* Check whether there is data on the socket fd. */
       /* Wait for five seconds. */
       tv.tv_sec = 5;
       tv.tv_usec = 0;
       printf("calling select()\n");
       retval = select(maxFD + 1, &rfds, NULL, NULL, &tv);
+      if(retval < 0){
+        perror("select()");
+      }
       for(int i = 0; i <= maxFD; i++){
         printf("i=%d\n", i);
         if(FD_ISSET(i, &rfds)){
@@ -242,35 +244,28 @@ int main(int argc, char **argv)
             /* For TCP connectios, we first have to accept. */
             connfd = accept(sockfd, (struct sockaddr *) &client,
                             &len);
+            /*set the socket in fd and ssl*/
+            FD_SET(connfd, &master);
+            SSL_set_fd(server_ssl, connfd);
+            /*increase sockets to check*/
             if(maxFD < connfd){
               printf("maxFD = connfd\n");
               maxFD = connfd;
             }
             printf ("Connection from %s, port %d\n",
               inet_ntoa(client.sin_addr), ntohs(client.sin_port));
-				          writeToFile(client, "connected");
-            SSL_set_fd(server_ssl, connfd);
+            /*write connection to .log*/
+				    writeToFile(client, "connected");
+            /*accept the ssl connection*/
             if(SSL_accept(server_ssl) < 0){
                 perror("SSL_accept()");
             }
+            /*send user the welcoming message*/
             err = sprintf(reply, "%s" ,"welcome!");
-            if(err < 0){
-                  printf("sprintf returns negative\n");
-            }
             err = SSL_write(server_ssl, reply, strlen(reply));
             CHK_SSL(err);
-            FD_CLR(sockfd, &rfds);
-			      FD_SET(connfd, &rfds);
           }
           else{
-              if (retval == -1) {
-                      perror("select()");
-              }
-              else if(retval == 0){
-                //nothing to read
-                printf("retval == 0\n");
-              }
-              else{
                 printf("retval > 0\n");
                 //connection exists data to read
                 memset(&message, 0, sizeof(message));
@@ -278,7 +273,6 @@ int main(int argc, char **argv)
                 CHK_SSL(err);
                 message[err] = '\0';
                 printf("%s\n", message);
-              }
           }
         } //FD_ISSET
       }//forloopfd
