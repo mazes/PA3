@@ -212,7 +212,6 @@ int main(int argc, char **argv){
                 memset(&message, 0, sizeof(message));
                 err = SSL_read(server_ssl, message, sizeof(message));
                 CHK_SSL(err);
-                checkMessage(server_ssl, message, users);
                 if(err == 0){
                   /*client has disconnected*/
                   int sock = SSL_get_fd(server_ssl);
