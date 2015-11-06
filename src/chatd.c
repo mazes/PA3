@@ -191,7 +191,7 @@ int main(int argc, char **argv){
     char message[512];
     char reply[124];
     SSL *server_ssl;
-    Users user[1000];
+    Users users[1000];
     struct sockaddr_in clientArr[1000];
     if(argc < 2){
       perror("only use port as argument");
