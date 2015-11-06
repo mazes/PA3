@@ -236,6 +236,7 @@ int main(int argc, char **argv){
                 perror("SSL_accept()");
             }
             /*send user the welcoming message*/
+            err = sprintf(reply, "%s" ,"welcome!");
             err = SSL_write(server_ssl, reply, strlen(reply));
             CHK_SSL(err);
           }
