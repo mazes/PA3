@@ -27,14 +27,6 @@
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
-typedef struct Users{
-  char clientIP[17];
-  char portNr[6];
-  char *username;
-  int socket;
-}Users;
-
-
 /* This can be used to build instances of GTree that index on
    the address of a connection. */
 int sockaddr_in_cmp(const void *addr1, const void *addr2){
@@ -139,36 +131,6 @@ void writeToFile(struct sockaddr_in client , char *connection){
   fclose(fd);
 }
 
-/*Print out logged in users*/
-void addUsers(int fd, struct sockaddr_in client, Users users){
-  memset(&users.clientIP, 0, sizeof(users.clientIP));
-  struct sockaddr_in* ip4Add = (struct sockaddr_in*)&client;
-  int ipAddr = ip4Add->sin_addr.s_addr;
-  inet_ntop( AF_INET, &ipAddr, users.clientIP, INET_ADDRSTRLEN);
-  int portnum = (int) ntohs(client.sin_port);
-  sprintf(users.portNr, "%d", portnum);
-  users.username = NULL;
-}
-
-void printUsers(Users users[]){
-  for(int i = 0; i < 1000; i++){
-    if(strcmp(" ", users[i].clientIP, 1 != 0)){
-      printf("clientIP: %s\n", users[i].clientIP);
-    }
-  }
-}
-
-void checkMessage(SSL *ssl, char *message, Users users[]){
-    if(strncmp("/who", message, 4) == 0){
-      printUsers(users);
-    }
-}
-
-void setUsersNull(Users users[]){
-  for(int i = 0; i < 1000; i++){
-    users[i].clientIP[0] = ' ';
-  }
-}
 int main(int argc, char **argv){
     int sockfd, err;
     int maxFD;
@@ -179,8 +141,6 @@ int main(int argc, char **argv){
     char message[512];
     char reply[124];
     SSL *server_ssl;
-    Users users[1000];
-    setUsersNull(users);
     struct sockaddr_in clientArr[1000];
     if(argc < 2){
       perror("only use port as argument");
@@ -235,8 +195,6 @@ int main(int argc, char **argv){
               inet_ntoa(client.sin_addr), ntohs(client.sin_port));
             /*write connection to .log*/
 				    writeToFile(clientArr[connfd], "connected");
-
-            addUsers(connfd, client, users[connfd]);
             /*accept the ssl connection*/
             if(SSL_accept(server_ssl) < 0){
                 perror("SSL_accept()");
