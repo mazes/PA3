@@ -167,12 +167,13 @@ void writeToFile(struct sockaddr_in client , char *connection){
 
     strftime(date,21, "%Y-%m-%d %H:%M:%S", tmpt);
 
-	char * clientIP;
+	char clientIP[17] ;
+	memset(&clientIP, 0, sizeof(clientIP));
 	struct sockaddr_in* ip4Add = (struct sockaddr_in*)&client;
 	int ipAddr = ip4Add->sin_addr.s_addr;
 	inet_ntop( AF_INET, &ipAddr, clientIP, INET_ADDRSTRLEN);
 	int portnum = (int) ntohs(client.sin_port);
-	char *portNr;
+	char portNr[8];
 	sprintf(portNr, "%d", portnum);
 
     if(fputs(date, fd) < 0)printf("error writing to file");
@@ -243,6 +244,7 @@ int main(int argc, char **argv)
                             &len);
             printf ("Connection from %s, port %d\n",
               inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+				writeToFile(client, "connected");
             SSL_set_fd(server_ssl, connfd);
             if(SSL_accept(server_ssl) < 0){
                 perror("SSL_accept()");

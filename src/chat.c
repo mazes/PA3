@@ -253,6 +253,7 @@ void readline_callback(char *line)
         snprintf(buffer, 255, "Message: %s\n", line);
         write(STDOUT_FILENO, buffer, strlen(buffer));
         fsync(STDOUT_FILENO);
+		SSL_write(server_ssl, buffer, strlen(buffer));
 }
 
 void ShowCerts(SSL* ssl){
@@ -404,13 +405,9 @@ int main(int argc, char **argv){
 									err = SSL_read(server_ssl, message, sizeof(message));
 									CHK_SSL(err);
 									message[err] = '\0';
-									printf("%s\n", message);
+									printf("message from server: %s\n", message);
 								}
 				}
-					
-								printf("SSL_write: hallo");	
-								char *message = "hallo";
-									SSL_write(server_ssl, "hallo", strlen(message));
         }
 				SSL_free(server_ssl);
 				close(server_fd);
