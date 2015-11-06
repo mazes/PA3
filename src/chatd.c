@@ -181,16 +181,16 @@ void addUsers(int fd, struct sockaddr_in client, Users users){
   users.username = NULL;
 }
 
-void printUsers(User []users){
+void printUsers(Users users[]){
   for(int i = 0; i < 1000; i++){
-    if(strncmp(" ", users[i].clentIP, 1 != 0)){
+    if(strncmp(" ", users[i].clientIP, 1 != 0)){
       printf("clientIP: %s\n", users[i].clientIP);
     }
   }
 }
 
-void checkMessage(SSL *ssl, char *message, User []users){
-    if(strncmp("/who", message 4) == 0){
+void checkMessage(SSL *ssl, char *message, Users users[]){
+    if(strncmp("/who", message, 4) == 0){
       printUsers(users);
     }
 }
