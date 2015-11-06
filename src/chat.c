@@ -388,7 +388,7 @@ int main(int argc, char **argv){
                         rl_callback_read_char();
                 }
 				else{
-							if(FD_ISSET(serverfd, &rfds)){
+							if(FD_ISSET(server_fd, &rfds)){
 										char *message = "hallo";
 										SSL_write(server_ssl, "hallo", strlen(message));
 										/* Handle messages from the server here! */
