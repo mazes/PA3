@@ -279,10 +279,12 @@ int main(int argc, char **argv)
                   int sock = SSL_get_fd(server_ssl);
                   SSL_free(server_ssl);
                   close(sock);
-                }
+				  FD_CLR(i, &master);
+                }else{
                 message[err] = '\0';
                 printf("%s\n", message);
                 SSL_write(server_ssl, message, strlen(message));
+				}
           }
         } //FD_ISSET
       }//forloopfd
