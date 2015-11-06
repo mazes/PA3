@@ -177,6 +177,7 @@ int main(int argc, char **argv){
     char message[512];
     char reply[124];
     SSL *server_ssl;
+    struct sockaddr_in clientArr[1000];
     if(argc < 2){
       perror("only use port as argument");
       exit(-1);
@@ -220,6 +221,7 @@ int main(int argc, char **argv){
             /*set the socket in fd and ssl*/
             FD_SET(connfd, &master);
             SSL_set_fd(server_ssl, connfd);
+            clientArr[connfd] = client;
             /*increase sockets if needed*/
             if(maxFD < connfd){
                 printf("maxFD = connfd\n");
@@ -228,7 +230,7 @@ int main(int argc, char **argv){
             printf ("Connection from %s, port %d\n",
               inet_ntoa(client.sin_addr), ntohs(client.sin_port));
             /*write connection to .log*/
-				    writeToFile(client, "connected");
+				    writeToFile(clientArr[connfd], "connected");
             /*accept the ssl connection*/
             if(SSL_accept(server_ssl) < 0){
                 perror("SSL_accept()");
@@ -251,7 +253,7 @@ int main(int argc, char **argv){
                   /*get sockaddr from socket!!*/
                   close(sock);
 				          FD_CLR(i, &master);
-                  writeToFile(client, "disconnected");
+                  writeToFile(clientArr[i], "disconnected");
                 }else{
                     message[err] = '\0';
                     printf("%s\n", message);
