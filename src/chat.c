@@ -251,6 +251,7 @@ void readline_callback(char *line)
         }
         /* Sent the buffer to the server. */
         snprintf(buffer, 255, "Message: %s\n", line);
+				SSL_write(server_ssl, buffer, strlen(buffer));
         write(STDOUT_FILENO, buffer, strlen(buffer));
         fsync(STDOUT_FILENO);
 }
@@ -349,7 +350,6 @@ int main(int argc, char **argv){
 				printf("Before prompt\n");
 				fd_set server;
 				FD_ZERO(&server);
-				FD_SET(server_fd, &server);
         prompt = strdup("> ");
         rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &readline_callback);
 				while (active) {
@@ -358,6 +358,7 @@ int main(int argc, char **argv){
 
                 FD_ZERO(&rfds);
                 FD_SET(STDIN_FILENO, &rfds);
+											FD_SET(server_fd, &rfds);
 								timeout.tv_sec = 5;
 								timeout.tv_usec = 0;
 
