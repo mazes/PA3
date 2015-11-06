@@ -3,4 +3,17 @@
 Protocol
 ========
 
-Explain your protocol here.
+1. Implemented in code
+
+2. Implemented in code
+
+3. Implemented in code
+
+4. /list would be implemented very similar to /who except listing 
+	available chatrooms instead of persons online
+
+5. /user username  would Ask user to insert username which would be 
+	linked with ip and port in a tree using gtree() , then client 
+	asks for password, password would be hashed. 
+
+6. - 8. Did not have time time to even think about them.
