@@ -182,9 +182,8 @@ void addUsers(int fd, struct sockaddr_in client, Users users){
 }
 
 void printUsers(Users users[]){
-  memset(&users, 0, sizeof(users));
   for(int i = 0; i < 1000; i++){
-    if(strncmp("\0", users[i].clientIP, 1 != 0)){
+    if(strncmp(" ", users[i].clientIP, 1 != 0)){
       printf("clientIP: %s\n", users[i].clientIP);
     }
   }
@@ -196,6 +195,11 @@ void checkMessage(SSL *ssl, char *message, Users users[]){
     }
 }
 
+void setUsersNull(Users users[]){
+  for(int i = 0; i < 1000; i++){
+    users[i].clientIP = " ";
+  }
+}
 int main(int argc, char **argv){
     int sockfd, err;
     int maxFD;
@@ -207,6 +211,7 @@ int main(int argc, char **argv){
     char reply[124];
     SSL *server_ssl;
     Users users[1000];
+    setUsersNull(users);
     struct sockaddr_in clientArr[1000];
     if(argc < 2){
       perror("only use port as argument");
