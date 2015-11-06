@@ -219,9 +219,9 @@ int main(int argc, char **argv)
     FD_ZERO(&master);
     FD_ZERO(&rfds);
     FD_SET(sockfd, &master);
-
+    memcpy(&rfds, &master, sizeof(rfds));
     for (;;) {
-      memcpy(&rfds, &master, sizeof(rfds));
+
       /* Check whether there is data on the socket fd. */
       /* Wait for five seconds. */
       tv.tv_sec = 5;
@@ -248,7 +248,7 @@ int main(int argc, char **argv)
             }
             printf ("Connection from %s, port %d\n",
               inet_ntoa(client.sin_addr), ntohs(client.sin_port));
-				writeToFile(client, "connected");
+				          writeToFile(client, "connected");
             SSL_set_fd(server_ssl, connfd);
             if(SSL_accept(server_ssl) < 0){
                 perror("SSL_accept()");
@@ -268,7 +268,7 @@ int main(int argc, char **argv)
               }
               else if(retval == 0){
                 //nothing to read
-                printf("retval == 0");
+                printf("retval == 0\n");
               }
               else{
                 printf("retval > 0\n");
