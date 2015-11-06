@@ -220,6 +220,7 @@ int main(int argc, char **argv)
     FD_ZERO(&rfds);
     FD_SET(sockfd, &master);
     for (;;) {
+      FD_ZERO(&rfds);
       memcpy(&rfds, &master, sizeof(rfds));
       /* Check whether there is data on the socket fd. */
       /* Wait for five seconds. */

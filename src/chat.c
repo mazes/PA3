@@ -388,26 +388,27 @@ int main(int argc, char **argv){
                         rl_callback_read_char();
                 }
 				else{
-								char *message = "hallo";
-								SSL_write(server_ssl, "hallo", strlen(message));
-								/* Handle messages from the server here! */
-								int retval = select(server_fd+1,&server, NULL, NULL,&timeout);
-								if (retval < 0){
-									perror("serverselect < 0");
-								}
+							if(FD_ISSET(serverfd, &rfds)){
+										char *message = "hallo";
+										SSL_write(server_ssl, "hallo", strlen(message));
+										/* Handle messages from the server here! */
+										if (r < 0){
+											perror("serverselect < 0");
+										}
 
-								if(r == 0){
-									printf("nothing to read from serverselect\n");
+										else if(r == 0){
+											printf("nothing to read from serverselect\n");
+										}
+										else{
+											printf("something on serverfd\n");
+											memset(&message, 0, sizeof(message));
+											err = SSL_read(server_ssl, message, sizeof(message));
+											CHK_SSL(err);
+											message[err] = '\0';
+											printf("%s\n", message);
+										}
 								}
-								else{
-									printf("something on serverfd\n");
-									memset(&message, 0, sizeof(message));
-									err = SSL_read(server_ssl, message, sizeof(message));
-									CHK_SSL(err);
-									message[err] = '\0';
-									printf("%s\n", message);
-								}
-				}
+					}
         }
 				SSL_free(server_ssl);
 				close(server_fd);
