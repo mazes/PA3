@@ -172,7 +172,6 @@ void writeToFile(struct sockaddr_in client , char *connection){
 
 /*Print out logged in users*/
 void addUsers(int fd, struct sockaddr_in client, Users users){
-
   memset(&users.clientIP, 0, sizeof(users.clientIP));
   struct sockaddr_in* ip4Add = (struct sockaddr_in*)&client;
   int ipAddr = ip4Add->sin_addr.s_addr;
@@ -181,6 +180,7 @@ void addUsers(int fd, struct sockaddr_in client, Users users){
   sprintf(users.portNr, "%d", portnum);
   users.username = NULL;
 }
+
 int main(int argc, char **argv){
     int sockfd, err;
     int maxFD;
@@ -188,10 +188,10 @@ int main(int argc, char **argv){
     fd_set rfds, master;
     struct timeval tv;
     int retval;
-    char chatrooms[100][30];
     char message[512];
     char reply[124];
     SSL *server_ssl;
+    Users user[1000];
     struct sockaddr_in clientArr[1000];
     if(argc < 2){
       perror("only use port as argument");
@@ -246,6 +246,8 @@ int main(int argc, char **argv){
               inet_ntoa(client.sin_addr), ntohs(client.sin_port));
             /*write connection to .log*/
 				    writeToFile(clientArr[connfd], "connected");
+
+            addUsers(connfd, client, users[connfd]);
             /*accept the ssl connection*/
             if(SSL_accept(server_ssl) < 0){
                 perror("SSL_accept()");
