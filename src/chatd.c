@@ -224,7 +224,7 @@ int main(int argc, char **argv){
                     message[err] = '\0';
                     printf("%s\n", message);
                     SSL_write(server_ssl, message, strlen(message));
-				        }
+				    }
           }
         } //FD_ISSET
       }//forloopfd
